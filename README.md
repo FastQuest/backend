@@ -15,7 +15,7 @@ A API é responsável por processar as regras de negócio da plataforma, gerenci
 | GORM | ORM para interação com banco de dados |
 | PostgreSQL | Banco de dados relacional |
 | Swagger / OpenAPI | Documentação automática da API |
-| Goose | ferramenta de gerenciamento de migrações de banco de dados. |
+| Goose | Ferramenta de gerenciamento de migrações de banco de dados. |
 | JSON REST API | Comunicação entre frontend e backend |
 
 ---
@@ -196,6 +196,7 @@ O sistema utiliza **PostgreSQL** com modelo relacional.
 | Fase 5 |   🔍   | Sistema de busca avançada          |
 | Fase 6 |   🧠   | Recomendações de estudo            |
 | Fase 7 |   🤖   | Integração com IA para explicações |
+
 
 
 
