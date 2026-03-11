@@ -49,25 +49,28 @@ A API é responsável por processar as regras de negócio da plataforma, gerenci
 
 ---
 
+# Estrutura do Projeto
+
+```text
 fastquest-backend/
-├── 🗄️ database/
-│   └── database.go          # Configuração da conexão com o banco de dados
+├── database/
+│   └── database.go          # Configuração da conexão com o banco
 │
-├── 📑 docs/                 # Documentação autogerada (Swagger/OpenAPI)
-│   ├── docs.go
-│   ├── swagger.json
+├── docs/
+│   ├── docs.go              # Arquivo gerado pelo Swagger
+│   ├── swagger.json         # Documentação OpenAPI
 │   └── swagger.yaml
 │
-├── 🎮 handlers/             # Lógica de controle e endpoints da API
+├── handlers/
 │   ├── h_answers.go         # Endpoints de respostas
 │   ├── h_questions.go       # Endpoints de questões
 │   ├── h_question_set.go    # Endpoints de listas de questões
-│   └── utils.go             # Funções auxiliares de manipulação
+│   └── utils.go             # Funções auxiliares
 │
-├── 🚀 migrations/           # Scripts SQL para evolução do schema do banco
+├── migrations/              # Scripts de migração do banco
 │
-├── 📦 pkg/                  # Pacotes compartilhados e lógica de domínio
-│   ├── models/              # Definição das estruturas de dados (Entidades)
+├── pkg/
+│   ├── models/
 │   │   ├── answers.go
 │   │   ├── comment.go
 │   │   ├── pagination.go
@@ -78,12 +81,14 @@ fastquest-backend/
 │   │   ├── subject.go
 │   │   ├── topic.go
 │   │   └── user.go
-│   └── filtersMap.go        # Mapeamento de filtros para queries dinâmicas
+│   │
+│   └── filtersMap.go        # Mapeamento de filtros para queries
 │
-├── 🛣️ router.go             # Definição e agrupamento das rotas da API
-├── 🏁 main.go               # Ponto de entrada (Entrypoint) do servidor
-├── 🛠️ go.mod               # Gerenciamento de dependências e módulos Go
-└── 🛠️ go.sum               # Checksum das dependências
+├── router.go                # Definição das rotas da API
+├── main.go                  # Ponto de entrada do servidor
+├── go.mod                   # Dependências do projeto
+└── go.sum                   # Checksum das dependências
+```
 
 ---
 
@@ -189,5 +194,6 @@ O sistema utiliza **PostgreSQL** com modelo relacional.
 | Fase 5 |   🔍   | Sistema de busca avançada          |
 | Fase 6 |   🧠   | Recomendações de estudo            |
 | Fase 7 |   🤖   | Integração com IA para explicações |
+
 
 
