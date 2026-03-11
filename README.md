@@ -49,44 +49,41 @@ A API é responsável por processar as regras de negócio da plataforma, gerenci
 
 ---
 
-# Estrutura do Projeto
-
 fastquest-backend/
-├── database/
-│ └── database.go # Configuração da conexão com o banco
+├── 🗄️ database/
+│   └── database.go          # Configuração da conexão com o banco de dados
 │
-├── docs/
-│ ├── docs.go # Arquivo gerado pelo Swagger
-│ ├── swagger.json # Documentação OpenAPI
-│ └── swagger.yaml
+├── 📑 docs/                 # Documentação autogerada (Swagger/OpenAPI)
+│   ├── docs.go
+│   ├── swagger.json
+│   └── swagger.yaml
 │
-├── handlers/
-│ ├── h_answers.go # Endpoints de respostas
-│ ├── h_questions.go # Endpoints de questões
-│ ├── h_question_set.go # Endpoints de listas de questões
-│ └── utils.go # Funções auxiliares
+├── 🎮 handlers/             # Lógica de controle e endpoints da API
+│   ├── h_answers.go         # Endpoints de respostas
+│   ├── h_questions.go       # Endpoints de questões
+│   ├── h_question_set.go    # Endpoints de listas de questões
+│   └── utils.go             # Funções auxiliares de manipulação
 │
-├── migrations/ # Scripts de migração do banco
+├── 🚀 migrations/           # Scripts SQL para evolução do schema do banco
 │
-├── pkg/
-│ ├── models/
-│ │ ├── answers.go
-│ │ ├── comment.go
-│ │ ├── pagination.go
-│ │ ├── question.go
-│ │ ├── question_set.go
-│ │ ├── questionSource.go
-│ │ ├── source.go
-│ │ ├── subject.go
-│ │ ├── topic.go
-│ │ └── user.go
-│ │
-│ └── filtersMap.go # Mapeamento de filtros para queries
+├── 📦 pkg/                  # Pacotes compartilhados e lógica de domínio
+│   ├── models/              # Definição das estruturas de dados (Entidades)
+│   │   ├── answers.go
+│   │   ├── comment.go
+│   │   ├── pagination.go
+│   │   ├── question.go
+│   │   ├── question_set.go
+│   │   ├── questionSource.go
+│   │   ├── source.go
+│   │   ├── subject.go
+│   │   ├── topic.go
+│   │   └── user.go
+│   └── filtersMap.go        # Mapeamento de filtros para queries dinâmicas
 │
-├── router.go # Definição das rotas da API
-├── main.go # Ponto de entrada do servidor
-├── go.mod # Dependências do projeto
-└── go.sum
+├── 🛣️ router.go             # Definição e agrupamento das rotas da API
+├── 🏁 main.go               # Ponto de entrada (Entrypoint) do servidor
+├── 🛠️ go.mod               # Gerenciamento de dependências e módulos Go
+└── 🛠️ go.sum               # Checksum das dependências
 
 ---
 
@@ -192,4 +189,5 @@ O sistema utiliza **PostgreSQL** com modelo relacional.
 | Fase 5 |   🔍   | Sistema de busca avançada          |
 | Fase 6 |   🧠   | Recomendações de estudo            |
 | Fase 7 |   🤖   | Integração com IA para explicações |
+
 
