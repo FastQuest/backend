@@ -93,6 +93,12 @@ fastquest-backend/
 
 ---
 
+# DataBase Scheme
+
+<img width="1008" height="769" alt="image" src="https://github.com/user-attachments/assets/a41e68f4-5ce0-4e41-84bb-d160eb7e75e1" />
+
+---
+
 # Arquitetura
 
 A arquitetura do FastQuest segue um modelo **API REST com separação entre frontend e backend**.
