@@ -1,10 +1,16 @@
 -- +goose Up
 -- +goose StatementBegin
+
+CREATE TABLE PERMISSIONS (
+    id SERIAL PRIMARY KEY,
+    name TEXT NOT NULL UNIQUE
+);
 CREATE TABLE users (
     id SERIAL PRIMARY KEY,
     name TEXT NOT NULL,
     email TEXT UNIQUE NOT NULL,
-    password_hash TEXT NOT NULL
+    password_hash TEXT NOT NULL,
+    permission INT REFERENCES permissions(id)
 );
 
 CREATE TABLE subject (
