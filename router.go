@@ -5,8 +5,12 @@ import (
 	"strings"
 	"time"
 
-	//"FlashQuest/database"
-	"flashquest/handlers"
+	"flashquest/internal/ai"
+	"flashquest/internal/answer"
+	"flashquest/internal/exam"
+	"flashquest/internal/question"
+	"flashquest/internal/questionset"
+	"flashquest/internal/source"
 
 	"github.com/gorilla/mux"
 	"github.com/rs/cors"
@@ -43,30 +47,30 @@ func NewServer() *http.Server {
 
 func registerPaths(r *mux.Router) {
 	// Question Requests
-	r.HandleFunc("/questions", handlers.CreateQuestion).Methods("POST") //Updated
-	r.HandleFunc("/questions", handlers.GetQuestions).Methods("GET")
-	r.HandleFunc("/questions/by-ids", handlers.GetQuestionsByArray).Methods("POST")
-	r.HandleFunc("/questions/{id}", handlers.GetQuestion).Methods("GET")
-	r.HandleFunc("/questions/{id}", handlers.DeleteQuestion).Methods("DELETE")
+	r.HandleFunc("/questions", question.CreateQuestion).Methods("POST") //Updated
+	r.HandleFunc("/questions", question.GetQuestions).Methods("GET")
+	r.HandleFunc("/questions/by-ids", question.GetQuestionsByArray).Methods("POST")
+	r.HandleFunc("/questions/{id}", question.GetQuestion).Methods("GET")
+	r.HandleFunc("/questions/{id}", question.DeleteQuestion).Methods("DELETE")
 
 	// Answer Requests
-	r.HandleFunc("/questions/{id}/answers", handlers.PostAnswers).Methods("POST")
-	r.HandleFunc("/questions/{id}/answers", handlers.GetAnswers).Methods("GET")
-	r.HandleFunc("/answers/by-ids", handlers.GetAnswersByIDArray).Methods("POST")
+	r.HandleFunc("/questions/{id}/answers", answer.PostAnswers).Methods("POST")
+	r.HandleFunc("/questions/{id}/answers", answer.GetAnswers).Methods("GET")
+	r.HandleFunc("/answers/by-ids", answer.GetAnswersByIDArray).Methods("POST")
 
 	//Question Set Requests
-	r.HandleFunc("/question-sets", handlers.CreateQuestionSet).Methods("POST")
-	r.HandleFunc("/question-sets", handlers.GetLists).Methods("GET")
-	r.HandleFunc("/question-sets/{id}", handlers.GetQuestionSet).Methods("GET")
-	r.HandleFunc("/question-sets/{id}/questions", handlers.GetQuestionsFromSet).Methods("GET")
+	r.HandleFunc("/question-sets", questionset.CreateQuestionSet).Methods("POST")
+	r.HandleFunc("/question-sets", questionset.GetLists).Methods("GET")
+	r.HandleFunc("/question-sets/{id}", questionset.GetQuestionSet).Methods("GET")
+	r.HandleFunc("/question-sets/{id}/questions", questionset.GetQuestionsFromSet).Methods("GET")
 
-	r.HandleFunc("/sources", handlers.CreateSource).Methods("POST")
+	r.HandleFunc("/sources", source.CreateSource).Methods("POST")
 
 	//AI requests
-	r.HandleFunc("/ai/gen-question", handlers.PostAIGenQuestion).Methods("POST")
-	r.HandleFunc("/ai/gen-questionset", handlers.PostAIGenQuestionSet).Methods("POST")
+	r.HandleFunc("/ai/gen-question", ai.PostAIGenQuestion).Methods("POST")
+	r.HandleFunc("/ai/gen-questionset", ai.PostAIGenQuestionSet).Methods("POST")
 
-	r.HandleFunc("/exam", handlers.CreateExam).Methods("POST")
+	r.HandleFunc("/exam", exam.CreateExam).Methods("POST")
 
 	r.PathPrefix("/swagger/").Handler(httpSwagger.WrapHandler)
 }
