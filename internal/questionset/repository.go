@@ -1,7 +1,7 @@
 package questionset
 
 import (
-	"flashquest/database"
+	database "flashquest/internal/platform/database"
 	"flashquest/pkg/models"
 
 	"gorm.io/gorm"

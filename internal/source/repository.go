@@ -1,7 +1,7 @@
 package source
 
 import (
-	"flashquest/database"
+	database "flashquest/internal/platform/database"
 	"gorm.io/gorm"
 )
 

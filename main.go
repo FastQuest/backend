@@ -1,8 +1,8 @@
 package main
 
 import (
-	"flashquest/database"
 	"flashquest/internal/ai"
+	"flashquest/internal/platform/database"
 	"fmt"
 	"log"
 )

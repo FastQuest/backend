@@ -54,9 +54,6 @@ A API é responsável por processar as regras de negócio da plataforma, gerenci
 
 ```text
 fastquest-backend/
-├── database/
-│   └── database.go          # Configuração da conexão com o banco
-│
 ├── docs/
 │   ├── docs.go              # Arquivo gerado pelo Swagger
 │   ├── swagger.json         # Documentação OpenAPI
