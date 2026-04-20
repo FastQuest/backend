@@ -54,19 +54,20 @@ A API é responsável por processar as regras de negócio da plataforma, gerenci
 
 ```text
 fastquest-backend/
-├── database/
-│   └── database.go          # Configuração da conexão com o banco
-│
 ├── docs/
 │   ├── docs.go              # Arquivo gerado pelo Swagger
 │   ├── swagger.json         # Documentação OpenAPI
 │   └── swagger.yaml
 │
-├── handlers/
-│   ├── h_answers.go         # Endpoints de respostas
-│   ├── h_questions.go       # Endpoints de questões
-│   ├── h_question_set.go    # Endpoints de listas de questões
-│   └── utils.go             # Funções auxiliares
+├── internal/
+│   ├── platform/
+│   │   └── database/        # Conexão com banco (GORM)
+│   ├── question/            # Contexto de questões (handler/service/repository/dto/model)
+│   ├── answer/              # Contexto de respostas (handler/service/repository/dto/model)
+│   ├── questionset/         # Contexto de listas (handler/service/repository/dto/model)
+│   ├── source/              # Contexto de fontes (handler/service/repository/dto/model)
+│   ├── exam/                # Contexto de simulados/exam (handler/service/repository/dto/model)
+│   └── ai/                  # Contexto de geração por IA (handler/service/repository/dto/model)
 │
 ├── migrations/              # Scripts de migração do banco
 │
