@@ -100,8 +100,37 @@ func ParseAccessToken(tokenStr string, publicKeyPEM string) (AuthClaims, error) 
 		return AuthClaims{}, err
 	}
 
-	if claims.ExpiresAt != 0 && time.Now().Unix() >= claims.ExpiresAt {
+	var rawClaims map[string]json.RawMessage
+	if err := json.Unmarshal(payloadBytes, &rawClaims); err != nil {
+		return AuthClaims{}, err
+	}
+
+	if _, ok := rawClaims["exp"]; !ok {
+		return AuthClaims{}, errors.New("missing exp claim")
+	}
+
+	if _, ok := rawClaims["sub"]; !ok {
+		return AuthClaims{}, errors.New("missing sub claim")
+	}
+
+	if _, ok := rawClaims["role"]; !ok {
+		return AuthClaims{}, errors.New("missing role claim")
+	}
+
+	if claims.ExpiresAt <= 0 {
+		return AuthClaims{}, errors.New("invalid exp claim")
+	}
+
+	if time.Now().Unix() >= claims.ExpiresAt {
 		return AuthClaims{}, errors.New("token expired")
+	}
+
+	if claims.UserID == 0 {
+		return AuthClaims{}, errors.New("invalid sub claim")
+	}
+
+	if strings.TrimSpace(claims.Role) == "" {
+		return AuthClaims{}, errors.New("invalid role claim")
 	}
 
 	return claims, nil
