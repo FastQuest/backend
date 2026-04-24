@@ -21,6 +21,10 @@ func TestWriteError(t *testing.T) {
 	if rr.Body.String() != expected {
 		t.Fatalf("expected body %q, got %q", expected, rr.Body.String())
 	}
+
+	if got := rr.Header().Get("Content-Type"); got != "application/json" {
+		t.Fatalf("expected Content-Type application/json, got %q", got)
+	}
 }
 
 func TestWriteJSON(t *testing.T) {
@@ -36,5 +40,28 @@ func TestWriteJSON(t *testing.T) {
 	expected := "{\"ok\":true}\n"
 	if rr.Body.String() != expected {
 		t.Fatalf("expected body %q, got %q", expected, rr.Body.String())
+	}
+
+	if got := rr.Header().Get("Content-Type"); got != "application/json" {
+		t.Fatalf("expected Content-Type application/json, got %q", got)
+	}
+}
+
+func TestWriteJSONEncodeFailureFallback(t *testing.T) {
+	rr := httptest.NewRecorder()
+
+	apiresp.WriteJSON(rr, http.StatusCreated, map[string]any{"invalid": make(chan int)})
+
+	if rr.Code != http.StatusInternalServerError {
+		t.Fatalf("expected status %d, got %d", http.StatusInternalServerError, rr.Code)
+	}
+
+	expected := "{\"error\":{\"code\":\"INTERNAL_SERVER_ERROR\",\"message\":\"internal server error\"}}\n"
+	if rr.Body.String() != expected {
+		t.Fatalf("expected deterministic fallback body %q, got %q", expected, rr.Body.String())
+	}
+
+	if got := rr.Header().Get("Content-Type"); got != "application/json" {
+		t.Fatalf("expected Content-Type application/json, got %q", got)
 	}
 }
