@@ -278,3 +278,139 @@ func generateTestKeyPair(t *testing.T) (string, string) {
 
 	return string(privatePEM), string(publicPEM)
 }
+
+func TestRegisterValidateEmail(t *testing.T) {
+	privateKeyPEM, _ := generateTestKeyPair(t)
+	repo := &stubRepository{}
+	svc := NewService(repo, privateKeyPEM)
+
+	// Test empty email
+	_, err := svc.Register(RegisterRequest{
+		Name:     "User",
+		Email:    "",
+		Password: "password123",
+	})
+	if err == nil {
+		t.Fatal("expected error for empty email")
+	}
+
+	// Test invalid email format
+	_, err = svc.Register(RegisterRequest{
+		Name:     "User",
+		Email:    "notanemail",
+		Password: "password123",
+	})
+	if err == nil {
+		t.Fatal("expected error for invalid email format")
+	}
+
+	// Test email without local part
+	_, err = svc.Register(RegisterRequest{
+		Name:     "User",
+		Email:    "@ceub.edu.br",
+		Password: "password123",
+	})
+	if err == nil {
+		t.Fatal("expected error for email without local part")
+	}
+}
+
+func TestRegisterValidatePassword(t *testing.T) {
+	privateKeyPEM, _ := generateTestKeyPair(t)
+	repo := &stubRepository{}
+	svc := NewService(repo, privateKeyPEM)
+
+	// Test empty password
+	_, err := svc.Register(RegisterRequest{
+		Name:     "User",
+		Email:    "user@sempreceub.com",
+		Password: "",
+	})
+	if err == nil {
+		t.Fatal("expected error for empty password")
+	}
+
+	// Test password too short
+	_, err = svc.Register(RegisterRequest{
+		Name:     "User",
+		Email:    "user@sempreceub.com",
+		Password: "short",
+	})
+	if err == nil {
+		t.Fatal("expected error for password < 6 chars")
+	}
+}
+
+func TestRegisterValidateName(t *testing.T) {
+	privateKeyPEM, _ := generateTestKeyPair(t)
+	repo := &stubRepository{}
+	svc := NewService(repo, privateKeyPEM)
+
+	// Test empty name
+	_, err := svc.Register(RegisterRequest{
+		Name:     "",
+		Email:    "user@sempreceub.com",
+		Password: "password123",
+	})
+	if err == nil {
+		t.Fatal("expected error for empty name")
+	}
+}
+
+func TestLoginValidateEmail(t *testing.T) {
+	privateKeyPEM, _ := generateTestKeyPair(t)
+	repo := &stubRepository{}
+	svc := NewService(repo, privateKeyPEM)
+
+	// Test empty email
+	_, err := svc.Login(LoginRequest{
+		Email:    "",
+		Password: "password123",
+	})
+	if err == nil {
+		t.Fatal("expected error for empty email")
+	}
+
+	// Test invalid email format
+	_, err = svc.Login(LoginRequest{
+		Email:    "notanemail",
+		Password: "password123",
+	})
+	if err == nil {
+		t.Fatal("expected error for invalid email format")
+	}
+}
+
+func TestLoginValidatePassword(t *testing.T) {
+	privateKeyPEM, _ := generateTestKeyPair(t)
+	repo := &stubRepository{}
+	svc := NewService(repo, privateKeyPEM)
+
+	// Test empty password
+	_, err := svc.Login(LoginRequest{
+		Email:    "user@sempreceub.com",
+		Password: "",
+	})
+	if err == nil {
+		t.Fatal("expected error for empty password")
+	}
+}
+
+func TestLoginUserEnumeration(t *testing.T) {
+	privateKeyPEM, _ := generateTestKeyPair(t)
+	repo := &stubRepository{
+		findUserByEmailFn: func(_ string) (*models.User, error) {
+			return nil, ErrUserNotFound
+		},
+	}
+	svc := NewService(repo, privateKeyPEM)
+
+	// Both non-existent and wrong password should return same generic error
+	_, err := svc.Login(LoginRequest{
+		Email:    "unknown@sempreceub.com",
+		Password: "password123",
+	})
+	if !errors.Is(err, ErrInvalidCredentials) {
+		t.Fatalf("expected ErrInvalidCredentials, got %v", err)
+	}
+}

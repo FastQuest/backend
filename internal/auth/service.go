@@ -2,6 +2,7 @@ package auth
 
 import (
 	"errors"
+	"net/mail"
 	"strings"
 	"time"
 
@@ -36,6 +37,11 @@ func NewService(repository Repository, privateKeyPEM string) *Service {
 }
 
 func (s *Service) Register(req RegisterRequest) (AuthResponse, error) {
+	// Validate inputs
+	if err := validateRegisterRequest(req); err != nil {
+		return AuthResponse{}, err
+	}
+
 	normalizedEmail := normalizeEmail(req.Email)
 	roleName, err := resolveRole(normalizedEmail)
 	if err != nil {
@@ -71,6 +77,11 @@ func (s *Service) Register(req RegisterRequest) (AuthResponse, error) {
 }
 
 func (s *Service) Login(req LoginRequest) (AuthResponse, error) {
+	// Validate inputs
+	if err := validateLoginRequest(req); err != nil {
+		return AuthResponse{}, err
+	}
+
 	normalizedEmail := normalizeEmail(req.Email)
 	user, err := s.repository.FindUserByEmail(normalizedEmail)
 	if err != nil {
@@ -134,4 +145,39 @@ func resolveRole(email string) (string, error) {
 
 func normalizeEmail(email string) string {
 	return strings.ToLower(strings.TrimSpace(email))
+}
+
+func validateRegisterRequest(req RegisterRequest) error {
+	if req.Name == "" {
+		return errors.New("name is required")
+	}
+	if err := validateEmail(req.Email); err != nil {
+		return err
+	}
+	if req.Password == "" || len(req.Password) < 6 {
+		return errors.New("password must be at least 6 characters")
+	}
+	return nil
+}
+
+func validateLoginRequest(req LoginRequest) error {
+	if err := validateEmail(req.Email); err != nil {
+		return err
+	}
+	if req.Password == "" {
+		return errors.New("password is required")
+	}
+	return nil
+}
+
+func validateEmail(email string) error {
+	normalized := normalizeEmail(email)
+	if normalized == "" {
+		return errors.New("email is required")
+	}
+	_, err := mail.ParseAddress(normalized)
+	if err != nil {
+		return errors.New("invalid email format")
+	}
+	return nil
 }
