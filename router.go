@@ -2,11 +2,13 @@ package main
 
 import (
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
 	"flashquest/internal/ai"
 	"flashquest/internal/answer"
+	"flashquest/internal/auth"
 	"flashquest/internal/exam"
 	"flashquest/internal/question"
 	"flashquest/internal/questionset"
@@ -46,6 +48,12 @@ func NewServer() *http.Server {
 }
 
 func registerPaths(r *mux.Router) {
+	// Auth Requests
+	authRepo := auth.NewRepository()
+	authService := auth.NewService(authRepo, os.Getenv("JWT_PRIVATE_KEY"))
+	r.HandleFunc("/api/auth/register", auth.RegisterHandler(authService)).Methods("POST")
+	r.HandleFunc("/api/auth/login", auth.LoginHandler(authService)).Methods("POST")
+
 	// Question Requests
 	r.HandleFunc("/questions", question.CreateQuestion).Methods("POST") //Updated
 	r.HandleFunc("/questions", question.GetQuestions).Methods("GET")
