@@ -25,6 +25,16 @@ func PostAIGenQuestion(w http.ResponseWriter, r *http.Request) {
 	addAIQuestion(genQuestion(test.Text))
 }
 
+// GetQuestions godoc
+// @Summary Generate question set by AI
+// @Description Generate question set by AI
+// @Tags AI
+// @Accept json
+// @Produce json
+// @Param question body TestBody true "Text to generate a set of questions"
+// @Success 201
+// @Failure 500 {string} string "Internal server error"
+// @Router /ai/gen-questionset [post]
 func PostAIGenQuestionSet(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -43,4 +53,6 @@ func PostAIGenQuestionSet(w http.ResponseWriter, r *http.Request) {
 	if errAddQS != nil {
 		http.Error(w, "Failed to generate question set", http.StatusInternalServerError)
 	}
+
+	w.WriteHeader(http.StatusCreated)
 }
