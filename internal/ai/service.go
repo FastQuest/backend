@@ -141,7 +141,7 @@ func formatQuestions(aiQuestions ...AIQuestionResponse) []models.Question {
 		questions = append(questions, models.Question{
 			Statement: q.Statement,
 			SubjectID: 7,
-			UserID:    5,
+			UserID:    2,
 			CreatedAt: time.Now(),
 			UpdatedAt: time.Now(),
 		})
@@ -175,7 +175,7 @@ func addAIQuestionSet(aiQuestionSet AIQuestionSetResponse) error {
 	questionSet := models.QuestionSet{
 		Name:        aiQuestionSet.Name,
 		Description: aiQuestionSet.Description,
-		UserID:      5,
+		UserID:      2,
 		CreatedAt:   time.Now(),
 		IsPrivate:   false,
 		Type:        "list",
