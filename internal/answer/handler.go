@@ -14,6 +14,7 @@ import (
 
 // @Summary Create answers for a question
 // @Description Creates one or more answers linked to the question identified by its ID.
+// @Tags Answers
 // @Param id path string true "Question ID"
 // @Param answers body []models.Answer true "List of answers to create"
 // @Success 201 {object} map[string]interface{} "Answers created successfully"
@@ -87,6 +88,7 @@ func PostAnswers(w http.ResponseWriter, r *http.Request) {
 
 // @Summary List answers for a question
 // @Description Returns all answers associated with the specified question.
+// @Tags Answers
 // @Param id path string true "Question ID"
 // @Success 200 {array} models.Answer
 // @Failure 400 {string} string "Question ID is required"
@@ -128,6 +130,7 @@ func GetAnswers(w http.ResponseWriter, r *http.Request) {
 
 // @Summary Fetch answers by IDs
 // @Description Retrieves answers matching the provided list of answer IDs.
+// @Tags Answers
 // @Param request body AnswersBody true "Answer IDs payload"
 // @Success 200 {array} models.Answer
 // @Failure 400 {string} string "Invalid request body"

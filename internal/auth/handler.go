@@ -11,7 +11,7 @@ import (
 // RegisterHandler godoc
 // @Summary      Register a new user
 // @Description  Registers a new user based on their email domain and returns access and refresh tokens.
-// @Tags         auth
+// @Tags         Auth
 // @Accept       json
 // @Produce      json
 // @Param        request body RegisterRequest true "Registration payload"
@@ -49,7 +49,7 @@ func RegisterHandler(service *Service) http.HandlerFunc {
 // LoginHandler godoc
 // @Summary      Authenticate a user
 // @Description  Authenticates a user with email and password, returning access and refresh tokens.
-// @Tags         auth
+// @Tags         Auth
 // @Accept       json
 // @Produce      json
 // @Param        request body LoginRequest true "Login credentials"
