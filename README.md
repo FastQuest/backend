@@ -10,16 +10,12 @@ A API é responsável por processar as regras de negócio da plataforma, gerenci
 
 Este projeto utiliza um **Makefile** para automatizar as tarefas de configuração, migração de banco de dados e inicialização do servidor. Abaixo estão as instruções detalhadas para colocar a aplicação para rodar na sua máquina.
 
----
-
 ## Pré-requisitos
 
 Antes de começar, certifique-se de ter instalado em sua máquina:
 * **Go** (versão 1.20 ou superior)
 * **Make** (nativo no Linux/Mac; necessário instalar no Windows)
 * Um banco de dados ativo (PostgreSQL, conforme configurado)
-
----
 
 ## Passo a Passo para Configuração
 
@@ -60,8 +56,6 @@ O Makefile possui um comando dedicado para instalar o gerador de documentação 
 make setup
 ```
 
----
-
 ## Migrações do Banco de Dados
 
 Antes de subir o servidor pela primeira vez (ou sempre que houver novas tabelas), execute as migrações para estruturar o banco de dados de forma automatizada:
@@ -72,7 +66,6 @@ make db-up
 
 > 🛑 *Nota: Se o seu arquivo `.env` não for encontrado, o comando será abortado imediatamente com um aviso amigável.*
 
----
 
 ## Inicializando a Aplicação
 
