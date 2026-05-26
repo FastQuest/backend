@@ -6,6 +6,103 @@ A API é responsável por processar as regras de negócio da plataforma, gerenci
 
 ---
 
+# Como Rodar o Projeto
+
+Este projeto utiliza um **Makefile** para automatizar as tarefas de configuração, migração de banco de dados e inicialização do servidor. Abaixo estão as instruções detalhadas para colocar a aplicação para rodar na sua máquina.
+
+---
+
+## Pré-requisitos
+
+Antes de começar, certifique-se de ter instalado em sua máquina:
+* **Go** (versão 1.20 ou superior)
+* **Make** (nativo no Linux/Mac; necessário instalar no Windows)
+* Um banco de dados ativo (PostgreSQL, conforme configurado)
+
+---
+
+## Passo a Passo para Configuração
+
+### 1. Clonar o Repositório
+Abra o terminal na pasta onde deseja salvar o projeto e execute:
+
+```bash
+git clone [https://github.com/FastQuest/backend.git](https://github.com/FastQuest/backend.git)
+cd backend
+```
+
+### 2. Configurar as Variáveis de Ambiente
+
+O projeto exige um arquivo `.env` na raiz para se conectar ao banco de dados e carregar outras configurações.
+
+Crie um arquivo chamado `.env` na raiz do projeto e adicione as suas credenciais seguindo o arquivo `.env.example`. Exemplo:
+
+```env
+DB_NAME=postgres
+DB_HOST=localhost
+DB_PASSWORD=password
+DB_USER=postgres
+DB_PORT=5432
+
+GOOSE_DRIVER=postgres
+GOOSE_DBSTRING=postgres://postgres:password@localhost:5432/postgres
+GOOSE_MIGRATION_DIR=./migrations
+
+GEMINI_API_KEY=api_pass
+
+```
+
+### 3. Instalar as Ferramentas Globais (`swag` e `goose`)
+
+O Makefile possui um comando dedicado para instalar o gerador de documentação (**Swagger**) e o gerenciador de migrações (**Goose**) diretamente no seu ambiente Go:
+
+```bash
+make setup
+```
+
+---
+
+## Migrações do Banco de Dados
+
+Antes de subir o servidor pela primeira vez (ou sempre que houver novas tabelas), execute as migrações para estruturar o banco de dados de forma automatizada:
+
+```bash
+make db-up
+```
+
+> 🛑 *Nota: Se o seu arquivo `.env` não for encontrado, o comando será abortado imediatamente com um aviso amigável.*
+
+---
+
+## Inicializando a Aplicação
+
+Para compilar, gerar a documentação e rodar o servidor de desenvolvimento, basta executar:
+
+```bash
+make run
+```
+
+💡 **O que o `make run` faz por debaixo dos panos?**
+
+1. Valida se o **Go** está instalado no sistema.
+2. Valida se o arquivo **`.env`** está presente.
+3. Verifica se a pasta `docs/` (gerada pelo Swagger) existe. Se não existir, ele executa o `swag init` automaticamente para você.
+4. Roda o comando nativo `go run .`.
+
+A documentação interativa da API estará disponível em: `http://localhost:8080/swagger/index.html` (ajuste a porta conforme configurado no seu `.env`).
+
+---
+
+## Resumo de Comandos Disponíveis
+
+| Comando | Descrição |
+| --- | --- |
+| `make setup` | Instala o `swag` e o `goose` na pasta de binários do Go (`GOPATH`). |
+| `make db-up` | Executa todas as migrações SQL pendentes na pasta `/migrations`. |
+| `make run` | Executa as validações, gera o Swagger (se necessário) e inicia a API. |
+
+---
+
 # Tecnologias
 
 | Tecnologia | Finalidade |
@@ -147,17 +244,6 @@ O sistema utiliza **PostgreSQL** com modelo relacional.
 - `Question → Source` (N:N)
 - `Question_Set → Question` (N:N)
 - `User → User_Response` (1:N)
-
----
-
-# Instalação e Configuração
-
-## Pré-requisitos
-
-- Go 1.20+
-- PostgreSQL
-- Docker
-- Git
 
 ---
 
