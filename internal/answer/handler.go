@@ -12,6 +12,15 @@ import (
 	"gorm.io/gorm"
 )
 
+// @Summary Create answers for a question
+// @Description Creates one or more answers linked to the question identified by its ID.
+// @Param id path string true "Question ID"
+// @Param answers body []models.Answer true "List of answers to create"
+// @Success 201 {object} map[string]interface{} "Answers created successfully"
+// @Failure 400 {string} string "Question ID is required or invalid request body"
+// @Failure 404 {string} string "Question not found"
+// @Failure 500 {string} string "Internal server error"
+// @Router /questions/{id}/answers [post]
 func PostAnswers(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	questionID := vars["id"]
@@ -76,6 +85,14 @@ func PostAnswers(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// @Summary List answers for a question
+// @Description Returns all answers associated with the specified question.
+// @Param id path string true "Question ID"
+// @Success 200 {array} models.Answer
+// @Failure 400 {string} string "Question ID is required"
+// @Failure 404 {string} string "No answers found for this question"
+// @Failure 500 {string} string "Internal server error"
+// @Router /questions/{id}/answers [get]
 func GetAnswers(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	questionID := vars["id"]
@@ -109,6 +126,13 @@ func GetAnswers(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// @Summary Fetch answers by IDs
+// @Description Retrieves answers matching the provided list of answer IDs.
+// @Param request body AnswersBody true "Answer IDs payload"
+// @Success 200 {array} models.Answer
+// @Failure 400 {string} string "Invalid request body"
+// @Failure 500 {string} string "Internal server error"
+// @Router /answers/by-ids [post]
 func GetAnswersByIDArray(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
