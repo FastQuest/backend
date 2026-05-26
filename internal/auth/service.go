@@ -2,10 +2,7 @@ package auth
 
 import (
 	"errors"
-<<<<<<< HEAD
-=======
 	"net/mail"
->>>>>>> feat/auth-rs256
 	"strings"
 	"time"
 
@@ -40,14 +37,11 @@ func NewService(repository Repository, privateKeyPEM string) *Service {
 }
 
 func (s *Service) Register(req RegisterRequest) (AuthResponse, error) {
-<<<<<<< HEAD
-=======
 	// Validate inputs
 	if err := validateRegisterRequest(req); err != nil {
 		return AuthResponse{}, err
 	}
 
->>>>>>> feat/auth-rs256
 	normalizedEmail := normalizeEmail(req.Email)
 	roleName, err := resolveRole(normalizedEmail)
 	if err != nil {
@@ -83,14 +77,11 @@ func (s *Service) Register(req RegisterRequest) (AuthResponse, error) {
 }
 
 func (s *Service) Login(req LoginRequest) (AuthResponse, error) {
-<<<<<<< HEAD
-=======
 	// Validate inputs
 	if err := validateLoginRequest(req); err != nil {
 		return AuthResponse{}, err
 	}
 
->>>>>>> feat/auth-rs256
 	normalizedEmail := normalizeEmail(req.Email)
 	user, err := s.repository.FindUserByEmail(normalizedEmail)
 	if err != nil {
@@ -155,8 +146,6 @@ func resolveRole(email string) (string, error) {
 func normalizeEmail(email string) string {
 	return strings.ToLower(strings.TrimSpace(email))
 }
-<<<<<<< HEAD
-=======
 
 func validateRegisterRequest(req RegisterRequest) error {
 	if req.Name == "" {
@@ -192,4 +181,3 @@ func validateEmail(email string) error {
 	}
 	return nil
 }
->>>>>>> feat/auth-rs256
