@@ -9,6 +9,17 @@ import (
 	"gorm.io/gorm"
 )
 
+// CreateSource godoc
+// @Summary Create a new source and exam instance (WIP)
+// @Description Creates a new source with its associated exam instance in a single transaction. Both source and exam instance are created atomically.
+// @Tags Sources
+// @Accept json
+// @Produce json
+// @Param source body models.SourceExamBody true "Source and Exam Instance details (name, type, edition, phase, year)"
+// @Success 201 {object} map[string]interface{} "Successfully created with id of the source"
+// @Failure 400 {string} string "Invalid request body or missing required fields (name and year are mandatory)"
+// @Failure 500 {string} string "Internal server error or database transaction failure"
+// @Router /sources [post]
 func CreateSource(w http.ResponseWriter, r *http.Request) {
 	db := getDB()
 	if db == nil {
