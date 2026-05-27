@@ -13,6 +13,17 @@ import (
 	"gorm.io/gorm"
 )
 
+// CreateQuestionSet godoc
+// @Summary      Creates a new question set
+// @Description  Receives question set data and creates it in the database, associating the provided questions.
+// @Tags         Question Set
+// @Accept       json
+// @Produce      json
+// @Param        questionSet body NewList true "Question set data"
+// @Success      200  {object}  models.QuestionSetResponse
+// @Failure      400  {string}  string "Invalid JSON body"
+// @Failure      500  {string}  string "Error creating question set"
+// @Router       /question-sets [post]
 func CreateQuestionSet(w http.ResponseWriter, r *http.Request) {
 	var newList NewList
 
@@ -65,6 +76,16 @@ func CreateQuestionSet(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(questionSet.ToResponse())
 }
 
+// GetQuestionSet godoc
+// @Summary      Fetches a question set by ID
+// @Description  Returns details of a specific question set.
+// @Tags         Question Set
+// @Produce      json
+// @Param        id       path      int     true  "Question set ID"
+// @Param        include  query     string  false "Relationships to include (e.g., user,questions)"
+// @Success      200      {object}  models.QuestionSetResponse
+// @Failure      404      {string}  string "Error fetching question set"
+// @Router       /question-sets/{id} [get]
 func GetQuestionSet(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
@@ -90,6 +111,16 @@ func GetQuestionSet(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(questionSet.ToResponse())
 }
 
+// GetQuestionsFromSet godoc
+// @Summary      Lists questions from a set
+// @Description  Returns questions associated with a question set. It can return full question objects or just a list of IDs if the query param 'fields=id' is passed.
+// @Tags         Question Set
+// @Produce      json
+// @Param        id      path      int     true  "Question set ID"
+// @Param        fields  query     string  false "Fields to return (e.g., id)"
+// @Success      200     {array}   models.QuestionResponse
+// @Failure      500     {string}  string "Error fetching question set links"
+// @Router       /question-sets/{id}/questions [get]
 func GetQuestionsFromSet(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
@@ -137,6 +168,22 @@ func GetQuestionsFromSet(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// GetLists godoc
+// @Summary      Returns registered question sets
+// @Description  Fetches question sets with pagination and filtering support (by user, privacy, or search term).
+// @Tags         Question Set
+// @Produce      json
+// @Param        page      query     int     false "Page number" default(1)
+// @Param        perPage   query     int     false "Number of items per page" default(10)
+// @Param        orderBy   query     string  false "Sorting order" Enums(created_at desc, created_at asc, name asc, name desc) default(created_at desc)
+// @Param        userId    query     int     false "Filter by creator user ID"
+// @Param        isPrivate query     bool    false "Filter by visibility"
+// @Param        statement query     string  false "Search term (name or description)"
+// @Param        include   query     string  false "Relationships to include separated by comma (questions and user)"
+// @Success      200       {object}  object "Returns a wrapped object containing 'data' and 'pagination'"
+// @Failure      400       {string}  string "Invalid param (e.g., malformed userId or isPrivate)"
+// @Failure      500       {string}  string "Error fetching lists"
+// @Router       /question-sets [get]
 func GetLists(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query()
 
