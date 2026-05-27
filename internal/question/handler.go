@@ -18,6 +18,17 @@ import (
 	"gorm.io/gorm"
 )
 
+// CreateQuestion godoc
+// @Summary Create a new question or multiple questions
+// @Description Creates a single question or a batch of questions based on the provided JSON body (object or array of objects).
+// @Tags Questions
+// @Accept json
+// @Produce json
+// @Param question body QuestionInput true "Single QuestionInput or Array of QuestionInput"
+// @Success 201 {object} models.Question "Successfully created question(s)"
+// @Failure 400 {string} string "Invalid request body format or missing fields"
+// @Failure 500 {string} string "Internal server error"
+// @Router /questions [post]
 func CreateQuestion(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -85,6 +96,19 @@ func CreateQuestion(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// GetQuestions godoc
+// @Summary Get paginated questions
+// @Description Retrieve a paginated list of questions with optional sorting, filtering, and eager loading of relationships.
+// @Tags Questions
+// @Accept json
+// @Produce json
+// @Param page query int false "Page number" default(1)
+// @Param perPage query int false "Items per page (max 100)" default(10)
+// @Param orderBy query string false "Order by field (e.g., created_at desc)"
+// @Param include query string false "Comma-separated list of relations to include (source, answers, user and subject)"
+// @Success 200 {object} map[string]interface{} "Paginated response containing data and pagination metadata"
+// @Failure 500 {string} string "Internal server error"
+// @Router /questions [get]
 func GetQuestions(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query()
 	page := parseInt(query.Get("page"), 1)
@@ -135,6 +159,19 @@ func GetQuestions(w http.ResponseWriter, r *http.Request) {
 	sendPaginatedResponse(w, questionsResp, total, limit, page)
 }
 
+// GetQuestion godoc
+// @Summary Get a specific question
+// @Description Retrieve a specific question by its ID.
+// @Tags Questions
+// @Accept json
+// @Produce json
+// @Param id path string true "Question ID"
+// @Param include query string false "Comma-separated list of relations to include"
+// @Success 200 {object} models.QuestionResponse
+// @Failure 400 {string} string "ID parameter is required"
+// @Failure 404 {string} string "Question not found"
+// @Failure 500 {string} string "Internal server error"
+// @Router /questions/{id} [get]
 func GetQuestion(w http.ResponseWriter, r *http.Request) {
 	id := mux.Vars(r)["id"]
 	if id == "" {
@@ -171,6 +208,18 @@ func GetQuestion(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// GetQuestionsByArray godoc
+// @Summary Get multiple questions by array of IDs
+// @Description Retrieve multiple questions by providing an array of their IDs in the request body.
+// @Tags Questions
+// @Accept json
+// @Produce json
+// @Param include query string false "Comma-separated list of relations to include"
+// @Param request body IDsRequest true "Array of question IDs"
+// @Success 200 {array} models.QuestionResponse
+// @Failure 400 {string} string "Invalid JSON body or empty IDs array"
+// @Failure 500 {string} string "Internal server error"
+// @Router /questions/by-ids [post]
 func GetQuestionsByArray(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query()
 	includeParam := query.Get("include")
@@ -205,6 +254,16 @@ func GetQuestionsByArray(w http.ResponseWriter, r *http.Request) {
 	sendJSON(w, questionsResp, http.StatusOK)
 }
 
+// DeleteQuestion godoc
+// @Summary Delete a question
+// @Description Delete a specific question by its ID.
+// @Tags Questions
+// @Param id path string true "Question ID"
+// @Success 200 {string} string "Successfully deleted"
+// @Failure 400 {string} string "ID parameter is required"
+// @Failure 404 {string} string "Question not found"
+// @Failure 500 {string} string "Internal server error"
+// @Router /questions/{id} [delete]
 func DeleteQuestion(w http.ResponseWriter, r *http.Request) {
 	id := mux.Vars(r)["id"]
 	if id == "" {
