@@ -8,6 +8,18 @@ import (
 	"flashquest/pkg/apiresp"
 )
 
+// RegisterHandler godoc
+// @Summary      Register a new user
+// @Description  Registers a new user based on their email domain and returns access and refresh tokens.
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        request body RegisterRequest true "Registration payload"
+// @Success      200  {object}  AuthResponse "Successfully registered"
+// @Failure      400  {object}  map[string]interface{} "Invalid request payload or validation error"
+// @Failure      409  {object}  map[string]interface{} "Email already in use"
+// @Failure      422  {object}  map[string]interface{} "Email domain not allowed"
+// @Router       /api/auth/register [post]
 func RegisterHandler(service *Service) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req RegisterRequest
@@ -34,6 +46,17 @@ func RegisterHandler(service *Service) http.HandlerFunc {
 	}
 }
 
+// LoginHandler godoc
+// @Summary      Authenticate a user
+// @Description  Authenticates a user with email and password, returning access and refresh tokens.
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        request body LoginRequest true "Login credentials"
+// @Success      200  {object}  AuthResponse "Successfully authenticated"
+// @Failure      400  {object}  map[string]interface{} "Invalid request payload or validation error"
+// @Failure      401  {object}  map[string]interface{} "Invalid email or password"
+// @Router       /api/auth/login [post]
 func LoginHandler(service *Service) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req LoginRequest
