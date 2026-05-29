@@ -6,7 +6,7 @@ CREATE TABLE submission (
     id SERIAL PRIMARY KEY,
     question_set_id INT REFERENCES question_set(id),
     user_id INT REFERENCES users(id),
-    hits INT NOT NULL,
+    correct_count INT NOT NULL,
     answers_count INT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
