@@ -65,7 +65,7 @@ func createExamPayload(newExam NewExam) (models.QuestionSetResponse, error) {
 
 	questionoptions := make([]models.QuestionOption, 0, len(questions)*4)
 	for i, q := range newExam.List.Questions {
-		for _, qo := range *q.Answers {
+		for _, qo := range *q.QuestionOptions {
 			questionoptions = append(questionoptions, models.QuestionOption{
 				Text:       qo.Text,
 				Is_correct: qo.Is_correct,

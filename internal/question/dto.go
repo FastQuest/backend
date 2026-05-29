@@ -8,11 +8,11 @@ type SafeUser struct {
 }
 
 type QuestionInput struct {
-	Statement            string           `json:"statement"`
-	SubjectID            int              `json:"subject_id"`
-	UserID               int              `json:"user_id"`
-	SourceExamInstanceID *uint            `json:"source_exam_instance_id"`
-	Answers              *[]models.Answer `json:"answers"`
+	Statement            string                    `json:"statement"`
+	SubjectID            int                       `json:"subject_id"`
+	UserID               int                       `json:"user_id"`
+	SourceExamInstanceID *uint                     `json:"source_exam_instance_id"`
+	QuestionOptions      *[]models.QuestionOption `json:"question_options"`
 }
 
 type IDsRequest struct {
