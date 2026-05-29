@@ -10,6 +10,3 @@ type QuestionOption struct {
 func (QuestionOption) TableName() string {
 	return "question_option"
 }
-
-// Keep Answer as an alias for backward compatibility during transition
-type Answer = QuestionOption
