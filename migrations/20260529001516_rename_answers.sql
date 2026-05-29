@@ -11,8 +11,8 @@ ALTER TABLE response RENAME TO answer;
 -- +goose Down
 -- +goose StatementBegin
 
-ALTER TABLE question_option RENAME TO answer;
 ALTER TABLE answer RENAME COLUMN question_option_id TO answer_id;
 ALTER TABLE answer RENAME TO response;
+ALTER TABLE question_option RENAME TO answer;
 
 -- +goose StatementEnd
