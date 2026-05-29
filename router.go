@@ -66,11 +66,6 @@ func registerPaths(r *mux.Router) {
 	r.HandleFunc("/questions/{id}/question-options", questionoption.GetQuestionOptions).Methods("GET")
 	r.HandleFunc("/question-options/by-ids", questionoption.GetQuestionOptionsByIDArray).Methods("POST")
 
-	// Backward compatibility - old /answers routes
-	r.HandleFunc("/questions/{id}/answers", questionoption.PostQuestionOptions).Methods("POST")
-	r.HandleFunc("/questions/{id}/answers", questionoption.GetQuestionOptions).Methods("GET")
-	r.HandleFunc("/answers/by-ids", questionoption.GetQuestionOptionsByIDArray).Methods("POST")
-
 	//Question Set Requests
 	r.HandleFunc("/question-sets", questionset.CreateQuestionSet).Methods("POST")
 	r.HandleFunc("/question-sets", questionset.GetLists).Methods("GET")
