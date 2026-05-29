@@ -780,12 +780,12 @@ POST http://localhost:8080/questions/1/answers
 ### 3️⃣ Teste de Listagem de Questões
 ```
 GET http://localhost:8080/questions
-GET http://localhost:8080/questions?include=answers,user,subject,source
+GET http://localhost:8080/questions?include=question-options,user,subject,source
 ```
 
 ### 4️⃣ Teste de Busca por ID
 ```
-GET http://localhost:8080/questions/1?include=answers
+GET http://localhost:8080/questions/1?include=question-options
 ```
 
 ### 5️⃣ Teste de Busca por Array de IDs
@@ -824,7 +824,7 @@ GET http://localhost:8080/question-sets/1/questions?fields=id
 
 ## 💡 Dicas Importantes
 
-1. **Includes:** Use `?include=answers,user,subject,source` para trazer dados relacionados
+1. **Includes:** Use `?include=question-options,user,subject,source` para trazer dados relacionados
 2. **Paginação:** O máximo de itens por página é 100
 3. **Ordenação:** Use `?orderBy=id asc` ou `?orderBy=created_at desc`
 4. **Filtros:** Use query params como `?subject_id=1` ou `?user_id=1`

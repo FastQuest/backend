@@ -17,14 +17,14 @@ type QuestionDoc struct {
 }
 
 type QuestionResponse struct {
-	ID        uint             `json:"id"`
-	CreatedAt time.Time        `json:"created_at"`
-	UpdatedAt time.Time        `json:"updated_at"`
-	Statement string           `json:"statement"`
-	Subject   *SubjectResponse `json:"subject,omitempty"`
-	User      *UserResponse    `json:"user,omitempty"`
-	Source    *UnifiedSource   `json:"source,omitempty"`
-	Answers   *[]Answer        `json:"answers,omitempty"`
+	ID               uint                 `json:"id"`
+	CreatedAt        time.Time            `json:"created_at"`
+	UpdatedAt        time.Time            `json:"updated_at"`
+	Statement        string               `json:"statement"`
+	Subject          *SubjectResponse     `json:"subject,omitempty"`
+	User             *UserResponse        `json:"user,omitempty"`
+	Source           *UnifiedSource       `json:"source,omitempty"`
+	QuestionOptions  *[]QuestionOption    `json:"question_options,omitempty"`
 }
 
 type Question struct {
@@ -38,7 +38,7 @@ type Question struct {
 	User                 *User    `gorm:"foreignKey:UserID"`
 	SourceExamInstanceID *uint
 	SourceExamInstance   *ExamInstance `gorm:"foreignKey:SourceExamInstanceID"`
-	Answers              *[]Answer
+	QuestionOptions      *[]QuestionOption
 }
 
 func (q Question) ToResponse() QuestionResponse {
@@ -59,8 +59,8 @@ func (q Question) ToResponse() QuestionResponse {
 		resp.User = &uResp
 	}
 
-	if q.Answers != nil && len(*q.Answers) > 0 {
-		resp.Answers = q.Answers
+	if q.QuestionOptions != nil && len(*q.QuestionOptions) > 0 {
+		resp.QuestionOptions = q.QuestionOptions
 	}
 
 	if q.SourceExamInstance != nil {
@@ -85,8 +85,8 @@ func ApplyQuestionIncludes(includes []string) func(*gorm.DB) *gorm.DB {
 			switch include {
 			case "source":
 				db = db.Preload("SourceExamInstance.Source")
-			case "answers":
-				db = db.Preload("Answers")
+			case "question-options":
+				db = db.Preload("QuestionOptions")
 			case "user":
 				db = db.Preload("User")
 			case "subject":

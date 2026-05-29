@@ -105,7 +105,7 @@ func CreateQuestion(w http.ResponseWriter, r *http.Request) {
 // @Param page query int false "Page number" default(1)
 // @Param perPage query int false "Items per page (max 100)" default(10)
 // @Param orderBy query string false "Order by field (e.g., created_at desc)"
-// @Param include query string false "Comma-separated list of relations to include (source, answers, user and subject)"
+// @Param include query string false "Comma-separated list of relations to include (source, question-options, user and subject)"
 // @Success 200 {object} map[string]interface{} "Paginated response containing data and pagination metadata"
 // @Failure 500 {string} string "Internal server error"
 // @Router /questions [get]
