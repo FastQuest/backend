@@ -6,7 +6,7 @@
 
 ## 📋 Índice
 1. [Questões (Questions)](#questões-questions)
-2. [Respostas (Answers)](#respostas-answers)
+2. [Opções de Questão (QuestionOptions)](#opções-de-questão-questionoptions)
 3. [Listas de Exercícios (Question Sets)](#listas-de-exercícios-question-sets)
 4. [Fontes de Exame (Sources)](#fontes-de-exame-sources)
 5. [Exames (Exams)](#exames-exams)
@@ -33,7 +33,7 @@ Content-Type: application/json
   "subject_id": 1,
   "user_id": 1,
   "source_exam_instance_id": 1,
-  "answers": [
+  "question_options": [
     {
       "text": "Brasília",
       "is_correct": true
@@ -116,7 +116,7 @@ Lista todas as questões com suporte a paginação, filtros e includes.
 - `page` (default: 1) - Número da página
 - `perPage` (default: 10, máximo: 100) - Itens por página
 - `orderBy` (default: "created_at desc") - Ordenação
-- `include` (comma-separated) - Inclui relacionamentos: "answers", "user", "subject", "source"
+- `include` (comma-separated) - Inclui relacionamentos: "question-options", "user", "subject", "source"
 - `subject_id` - Filtro por disciplina
 - `user_id` - Filtro por usuário
 
@@ -124,9 +124,9 @@ Lista todas as questões com suporte a paginação, filtros e includes.
 ```
 GET http://localhost:8080/questions
 GET http://localhost:8080/questions?page=1&perPage=5
-GET http://localhost:8080/questions?include=answers,user&subject_id=1
+GET http://localhost:8080/questions?include=question-options,user&subject_id=1
 GET http://localhost:8080/questions?orderBy=id asc&user_id=1
-GET http://localhost:8080/questions?include=answers,user,subject,source&page=2&perPage=20
+GET http://localhost:8080/questions?include=question-options,user,subject,source&page=2&perPage=20
 ```
 
 **Response (200 OK):**
@@ -157,7 +157,7 @@ GET http://localhost:8080/questions?include=answers,user,subject,source&page=2&p
           "phase": 1
         }
       },
-      "answers": [
+      "question_options": [
         {
           "id": 1,
           "text": "Rígida",
@@ -220,12 +220,12 @@ Retorna múltiplas questões a partir de uma lista de IDs.
 Retorna uma questão específica com opção de incluir relacionamentos.
 
 **Query Parameters:**
-- `include` (comma-separated) - "answers", "user", "subject", "source"
+- `include` (comma-separated) - "question-options", "user", "subject", "source"
 
 **Exemplos:**
 ```
 GET http://localhost:8080/questions/1
-GET http://localhost:8080/questions/1?include=answers,user,subject,source
+GET http://localhost:8080/questions/1?include=question-options,user,subject,source
 ```
 
 **Response (200 OK):**
@@ -254,7 +254,7 @@ GET http://localhost:8080/questions/1?include=answers,user,subject,source
       "phase": 1
     }
   },
-  "answers": [
+  "question_options": [
     {
       "id": 1,
       "text": "Rígida",
@@ -292,12 +292,12 @@ DELETE http://localhost:8080/questions/11
 
 ---
 
-## 💬 Respostas (Answers)
+## 💬 Opções de Questão (QuestionOptions)
 
-### 1. Adicionar Respostas a uma Questão
-**`POST /questions/{id}/answers`**
+### 1. Adicionar Opções a uma Questão
+**`POST /questions/{id}/question-options`**
 
-Cria múltiplas respostas para uma questão existente.
+Cria múltiplas opções para uma questão existente.
 
 **Body:**
 ```json
@@ -324,7 +324,7 @@ Cria múltiplas respostas para uma questão existente.
 **Response (201 Created):**
 ```json
 {
-  "message": "Answers created successfully",
+  "message": "Question options created successfully",
   "count": 4,
   "ids": [41, 42, 43, 44]
 }
@@ -332,14 +332,14 @@ Cria múltiplas respostas para uma questão existente.
 
 ---
 
-### 2. Listar Respostas de uma Questão
-**`GET /questions/{id}/answers`**
+### 2. Listar Opções de uma Questão
+**`GET /questions/{id}/question-options`**
 
-Retorna todas as respostas associadas a uma questão.
+Retorna todas as opções associadas a uma questão.
 
 **Exemplo:**
 ```
-GET http://localhost:8080/questions/1/answers
+GET http://localhost:8080/questions/1/question-options
 ```
 
 **Response (200 OK):**

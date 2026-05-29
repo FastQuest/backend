@@ -3,7 +3,7 @@ package exam
 import (
 	"errors"
 	"flashquest/helpers"
-	"flashquest/internal/answer"
+	"flashquest/internal/questionoption"
 	"flashquest/internal/question"
 	"flashquest/internal/questionset"
 	"flashquest/pkg/models"
@@ -63,20 +63,20 @@ func createExamPayload(newExam NewExam) (models.QuestionSetResponse, error) {
 		return models.QuestionSetResponse{}, errSendQ
 	}
 
-	answers := make([]models.Answer, 0, len(questions)*4)
+	questionoptions := make([]models.QuestionOption, 0, len(questions)*4)
 	for i, q := range newExam.List.Questions {
-		for _, a := range *q.Answers {
-			answers = append(answers, models.Answer{
-				Text:       a.Text,
-				Is_correct: a.Is_correct,
+		for _, qo := range *q.Answers {
+			questionoptions = append(questionoptions, models.QuestionOption{
+				Text:       qo.Text,
+				Is_correct: qo.Is_correct,
 				QuestionID: questions[i].ID,
 			})
 		}
 	}
 
-	errSendA := answer.SendAnswers(&answers)
-	if errSendA != nil {
-		return models.QuestionSetResponse{}, errSendA
+	errSendQO := questionoption.SendQuestionOptions(&questionoptions)
+	if errSendQO != nil {
+		return models.QuestionSetResponse{}, errSendQO
 	}
 
 	questionSetQuestion := make([]models.QuestionSetQuestion, 0, len(questions))

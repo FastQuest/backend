@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"flashquest/internal/ai"
-	"flashquest/internal/answer"
+	"flashquest/internal/questionoption"
 	"flashquest/internal/auth"
 	"flashquest/internal/exam"
 	"flashquest/internal/question"
@@ -61,10 +61,15 @@ func registerPaths(r *mux.Router) {
 	r.HandleFunc("/questions/{id}", question.GetQuestion).Methods("GET")
 	r.HandleFunc("/questions/{id}", question.DeleteQuestion).Methods("DELETE")
 
-	// Answer Requests
-	r.HandleFunc("/questions/{id}/answers", answer.PostAnswers).Methods("POST")
-	r.HandleFunc("/questions/{id}/answers", answer.GetAnswers).Methods("GET")
-	r.HandleFunc("/answers/by-ids", answer.GetAnswersByIDArray).Methods("POST")
+	// QuestionOption Requests
+	r.HandleFunc("/questions/{id}/question-options", questionoption.PostQuestionOptions).Methods("POST")
+	r.HandleFunc("/questions/{id}/question-options", questionoption.GetQuestionOptions).Methods("GET")
+	r.HandleFunc("/question-options/by-ids", questionoption.GetQuestionOptionsByIDArray).Methods("POST")
+
+	// Backward compatibility - old /answers routes
+	r.HandleFunc("/questions/{id}/answers", questionoption.PostQuestionOptions).Methods("POST")
+	r.HandleFunc("/questions/{id}/answers", questionoption.GetQuestionOptions).Methods("GET")
+	r.HandleFunc("/answers/by-ids", questionoption.GetQuestionOptionsByIDArray).Methods("POST")
 
 	//Question Set Requests
 	r.HandleFunc("/question-sets", questionset.CreateQuestionSet).Methods("POST")

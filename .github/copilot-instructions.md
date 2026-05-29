@@ -26,7 +26,7 @@ go vet ./...
 ## High-level architecture
 
 - Entry point is `main.go`: it initializes the database (`internal/platform/database.InitDB`), initializes Gemini (`internal/ai.InitGemini`), then starts the HTTP server from `NewServer()`.
-- Route registration is centralized in `main.go` (`registerPaths`), mapping directly to domain handlers under `internal/{question,answer,questionset,source,exam,ai}`.
+- Route registration is centralized in `main.go` (`registerPaths`), mapping directly to domain handlers under `internal/{question,questionoption,questionset,source,exam,ai}`.
 - Each domain follows a layered package shape (`handler.go`, `service.go`, `repository.go`, `dto.go`):
   - **handler**: HTTP parsing/validation/response
   - **repository**: GORM queries and persistence helpers
@@ -40,8 +40,8 @@ go vet ./...
 
 ## Key codebase conventions
 
-- Database table names are singular and explicitly mapped with `TableName()` in models (`question`, `answer`, `question_set`, etc.). Keep model/table naming aligned with existing migrations.
-- `include` query params are comma-separated and mapped to GORM preloads through `Apply*Includes` scope functions in `pkg/models` (for example: `include=answers,user,subject,source`).
+- Database table names are singular and explicitly mapped with `TableName()` in models (`question`, `question_option`, `question_set`, etc.). Keep model/table naming aligned with existing migrations.
+- `include` query params are comma-separated and mapped to GORM preloads through `Apply*Includes` scope functions in `pkg/models` (for example: `include=question-options,user,subject,source`).
 - List endpoints consistently use pagination query params `page` and `perPage` (with max `perPage` 100) and return a `data + pagination` JSON envelope.
 - Question creation (`POST /questions`) intentionally accepts either:
   - a single question object, or

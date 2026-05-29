@@ -12,8 +12,8 @@ var QuestionFilters = map[string]FilterFunc{
 	"statement": func(value string, qb *gorm.DB) *gorm.DB {
 		return qb.Where("statement ILIKE ?", "%"+value+"%")
 	},
-	"answer": func(value string, qb *gorm.DB) *gorm.DB {
-		return qb.Where("id IN (SELECT question_id FROM alternatives WHERE text ILIKE ?)", "%"+value+"%")
+	"question_option": func(value string, qb *gorm.DB) *gorm.DB {
+		return qb.Where("id IN (SELECT question_id FROM question_option WHERE text ILIKE ?)", "%"+value+"%")
 	},
 	"subject": func(value string, qb *gorm.DB) *gorm.DB {
 		return qb.
