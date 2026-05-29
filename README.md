@@ -153,7 +153,7 @@ fastquest-backend/
 │   ├── platform/
 │   │   └── database/        # Conexão com banco (GORM)
 │   ├── question/            # Contexto de questões (handler/service/repository/dto/model)
-│   ├── answer/              # Contexto de respostas (handler/service/repository/dto/model)
+│   ├── questionoption/     # Contexto de opções de questão (handler/service/repository/dto/model)
 │   ├── questionset/         # Contexto de listas (handler/service/repository/dto/model)
 │   ├── source/              # Contexto de fontes (handler/service/repository/dto/model)
 │   ├── exam/                # Contexto de simulados/exam (handler/service/repository/dto/model)
@@ -163,7 +163,7 @@ fastquest-backend/
 │
 ├── pkg/
 │   ├── models/
-│   │   ├── answers.go
+│   │   ├── question_option.go
 │   │   ├── comment.go
 │   │   ├── pagination.go
 │   │   ├── question.go
@@ -224,7 +224,7 @@ O sistema utiliza **PostgreSQL** com modelo relacional.
 | Subject | Disciplinas da prova da OAB |
 | Topic | Tópicos dentro das disciplinas |
 | Question | Questões cadastradas |
-| Answer | Alternativas de resposta |
+| QuestionOption | Opções de resposta |
 | Question_Set | Listas de questões |
 | Source | Fonte da questão (ex: prova específica) |
 | Comment | Comentários de usuários |
@@ -232,7 +232,7 @@ O sistema utiliza **PostgreSQL** com modelo relacional.
 
 ### Relacionamentos importantes
 
-- `Question → Answer` (1:N)
+- `Question → QuestionOption` (1:N)
 - `Question → Topic` (N:N)
 - `Question → Source` (N:N)
 - `Question_Set → Question` (N:N)
@@ -256,8 +256,8 @@ O sistema utiliza **PostgreSQL** com modelo relacional.
 
 | Método | Endpoint                  | Descrição                   |
 | :----- | :------------------------ | :-------------------------- |
-| POST   | `/questions/{id}/answers` | Enviar resposta             |
-| GET    | `/questions/{id}/answers` | Listar respostas da questão |
+| POST   | `/questions/{id}/question-options` | Enviar opção de questão |
+| GET    | `/questions/{id}/question-options` | Listar opções da questão |
 
 ## Listas de questões
 

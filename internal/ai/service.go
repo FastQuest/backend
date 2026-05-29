@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"flashquest/helpers"
-	"flashquest/internal/answer"
+	"flashquest/internal/questionoption"
 	"flashquest/internal/question"
 	"flashquest/internal/questionset"
 	"flashquest/pkg/models"
@@ -149,16 +149,16 @@ func formatQuestions(aiQuestions ...AIQuestionResponse) []models.Question {
 	return questions
 }
 
-func formatAnswer(questionID uint, aiAnswers ...AIAnswerResponse) []models.Answer {
-	answers := make([]models.Answer, 0, len(aiAnswers))
+func formatQuestionOption(questionID uint, aiAnswers ...AIAnswerResponse) []models.QuestionOption {
+	questionoptions := make([]models.QuestionOption, 0, len(aiAnswers))
 	for _, a := range aiAnswers {
-		answers = append(answers, models.Answer{
+		questionoptions = append(questionoptions, models.QuestionOption{
 			Text:       a.Text,
 			Is_correct: a.IsCorrect,
 			QuestionID: questionID,
 		})
 	}
-	return answers
+	return questionoptions
 }
 
 func addAIQuestion(aiQuestion AIQuestionResponse) {
@@ -166,9 +166,9 @@ func addAIQuestion(aiQuestion AIQuestionResponse) {
 	question.SendQuestions(&q)
 	log.Println("Successful Question Insert")
 
-	answersPayload := formatAnswer(q.ID, aiQuestion.Answers...)
-	answer.SendAnswers(&answersPayload)
-	log.Println("Successful Answer Insert")
+	questionoptionsPayload := formatQuestionOption(q.ID, aiQuestion.Answers...)
+	questionoption.SendQuestionOptions(&questionoptionsPayload)
+	log.Println("Successful QuestionOption Insert")
 }
 
 func addAIQuestionSet(aiQuestionSet AIQuestionSetResponse) error {
@@ -192,12 +192,12 @@ func addAIQuestionSet(aiQuestionSet AIQuestionSetResponse) error {
 		return errSendQ
 	}
 
-	answers := make([]models.Answer, 0, len(aiQuestionSet.Questions)*4)
+	answers := make([]models.QuestionOption, 0, len(aiQuestionSet.Questions)*4)
 	for i, q := range aiQuestionSet.Questions {
-		answers = append(answers, formatAnswer(questions[i].ID, q.Answers...)...)
+		answers = append(answers, formatQuestionOption(questions[i].ID, q.Answers...)...)
 	}
 
-	errSendA := answer.SendAnswers(&answers)
+	errSendA := questionoption.SendQuestionOptions(&answers)
 	if errSendA != nil {
 		return errSendA
 	}
