@@ -36,7 +36,7 @@ func findQuestionOptionsByQuestionID(db *gorm.DB, questionID string) ([]models.Q
 	return questionoptions, nil
 }
 
-func readQuestionOptionsByIDArray(db *gorm.DB, ids []uint) ([]models.QuestionOption, error) {
+func ReadQuestionOptionsByIDArray(db *gorm.DB, ids []uint) ([]models.QuestionOption, error) {
 	var questionoptions []models.QuestionOption
 	resultado := db.Where("id IN (?)", ids).Find(&questionoptions)
 
