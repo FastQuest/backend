@@ -2,6 +2,7 @@ package submission
 
 import (
 	"encoding/json"
+	"flashquest/internal/auth"
 	"fmt"
 	"net/http"
 )
@@ -27,6 +28,13 @@ func CreateSubmission(w http.ResponseWriter, r *http.Request) {
 		println(err.Error())
 		return
 	}
+
+	userIDValue := r.Context().Value(auth.ContextKeyUserID)
+	if userIDValue == nil {
+		http.Error(w, "User ID not found", http.StatusUnauthorized)
+		return
+	}
+	req.UserID = userIDValue.(uint)
 
 	submission, err := CreateSubmissionPayload(req)
 	if err != nil {
