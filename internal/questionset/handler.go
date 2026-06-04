@@ -97,13 +97,9 @@ func GetQuestionSet(w http.ResponseWriter, r *http.Request) {
 		includes = strings.Split(includeParam, ",")
 	}
 
-	db := getDB()
-
-	var questionSet models.QuestionSet
-
-	result := db.Scopes(models.ApplyQuestionSetIncludes(includes)).First(&questionSet, id)
-	if result.Error != nil {
-		http.Error(w, fmt.Sprintf("Error fetching question set: %v", result.Error), http.StatusNotFound)
+	questionSet, err := GetQuestionSetByID(id, includes)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Error fetching question set: %v", err), http.StatusNotFound)
 		return
 	}
 
