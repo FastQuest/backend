@@ -44,3 +44,17 @@ func sendQuestionSetQuestion(qqs ...*models.QuestionSetQuestion) error {
 func SendQuestionSetQuestionInternal(qqs ...*models.QuestionSetQuestion) error {
 	return sendQuestionSetQuestion(qqs...)
 }
+
+func GetQuestionSetByID(id string, includes []string) (*models.QuestionSet, error) {
+	db := getDB()
+	if db == nil {
+		return nil, errors.New("database connection not established")
+	}
+
+	questionSet, err := findQuestionSetByID(db, id, includes)
+	if err != nil {
+		return nil, fmt.Errorf("error fetching question set: %w", err)
+	}
+
+	return questionSet, nil
+}
