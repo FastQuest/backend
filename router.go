@@ -14,6 +14,7 @@ import (
 	"flashquest/internal/questionset"
 	"flashquest/internal/source"
 	"flashquest/internal/submission"
+	"flashquest/internal/user"
 
 	"github.com/gorilla/mux"
 	"github.com/rs/cors"
@@ -89,4 +90,5 @@ func registerPaths(r *mux.Router) {
 	protectedRouter.HandleFunc("/submissions", submission.CreateSubmission).Methods("POST")
 	protectedRouter.HandleFunc("/submissions", submission.GetUserSubmissions).Methods("GET")
 	protectedRouter.HandleFunc("/submissions/{id}", submission.GetSubmission).Methods("GET")
+	protectedRouter.HandleFunc("/users/me", user.GetCurrentUser).Methods("GET")
 }
