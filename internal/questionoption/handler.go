@@ -156,7 +156,7 @@ func GetQuestionOptionsByIDArray(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	questionoptions, _ := readQuestionOptionsByIDArray(db, questionoptionsBody.QuestionOptionIDs)
+	questionoptions, _ := ReadQuestionOptionsByIDArray(db, questionoptionsBody.QuestionOptionIDs)
 
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(questionoptions); err != nil {
