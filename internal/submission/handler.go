@@ -16,6 +16,7 @@ import (
 // @Success 200 {object} map[string]interface{} "Successfully created submission"
 // @Failure 400 {string} string "Invalid JSON body or request format"
 // @Failure 500 {string} string "Internal server error"
+// @Security BearerAuth
 // @Router /submissions [post]
 func CreateSubmission(w http.ResponseWriter, r *http.Request) {
 	var req CreateSubmissionRequest
