@@ -9,8 +9,13 @@ import (
 
 // @title FastQuest API
 // @version 1.0
-// @description This is a sample server Petstore server.
+// @description Coloque sua descrição aqui
 // @termsOfService http://swagger.io/terms/
+
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
+// @description Type "Bearer" followed by a space and JWT token.
 
 // @contact.name API Support
 // @contact.url http://www.swagger.io/support
