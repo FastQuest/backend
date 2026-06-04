@@ -7,12 +7,13 @@ import (
 	"time"
 
 	"flashquest/internal/ai"
-	"flashquest/internal/questionoption"
 	"flashquest/internal/auth"
 	"flashquest/internal/exam"
 	"flashquest/internal/question"
+	"flashquest/internal/questionoption"
 	"flashquest/internal/questionset"
 	"flashquest/internal/source"
+	"flashquest/internal/submission"
 
 	"github.com/gorilla/mux"
 	"github.com/rs/cors"
@@ -79,6 +80,8 @@ func registerPaths(r *mux.Router) {
 	r.HandleFunc("/ai/gen-questionset", ai.PostAIGenQuestionSet).Methods("POST")
 
 	r.HandleFunc("/exam", exam.CreateExam).Methods("POST")
+
+	r.HandleFunc("/submissions", submission.CreateSubmission).Methods("POST")
 
 	r.PathPrefix("/swagger/").Handler(httpSwagger.WrapHandler)
 }
