@@ -2,6 +2,7 @@ package submission
 
 import (
 	"errors"
+	"flashquest/internal/answer"
 	"flashquest/internal/platform/database"
 	"flashquest/internal/questionoption"
 	"flashquest/pkg/models"
@@ -41,6 +42,21 @@ func CreateSubmissionPayload(req CreateSubmissionRequest) (models.Submission, er
 	}
 
 	createdSubmission, err := createSubmission(db, &submission)
+	if err != nil {
+		return models.Submission{}, err
+	}
+
+	answers := make([]answer.CreateAnswerRequest, len(req.Answers))
+	for i, a := range req.Answers {
+		answers[i] = answer.CreateAnswerRequest{
+			SubmissionID:     createdSubmission.ID,
+			QuestionOptionID: a.OptionID,
+			QuestionID:       a.QuestionID,
+			IsCorrect:        options[i].Is_correct,
+		}
+	}
+
+	err = answer.SendAnswers(&answers)
 	if err != nil {
 		return models.Submission{}, err
 	}

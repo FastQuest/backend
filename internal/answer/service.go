@@ -7,7 +7,7 @@ import (
 	"fmt"
 )
 
-func SendAnswer(a *[]CreateAnswerRequest) error {
+func SendAnswers(a *[]CreateAnswerRequest) error {
 	for i, ans := range *a {
 		if ans.QuestionOptionID == 0 {
 			return fmt.Errorf("questionOptionID at index %d cannot be zero", i)

@@ -87,4 +87,5 @@ func registerPaths(r *mux.Router) {
 	protectedRouter.Use(auth.RequireAuth)
 
 	protectedRouter.HandleFunc("/submissions", submission.CreateSubmission).Methods("POST")
+	protectedRouter.HandleFunc("/users/submissions", submission.GetUserSubmissions).Methods("GET")
 }
