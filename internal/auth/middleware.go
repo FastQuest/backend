@@ -10,9 +10,11 @@ import (
 	jwtsec "flashquest/pkg/security/jwt"
 )
 
+type contextKey string
+
 const (
-	ContextKeyUserID = "user_id"
-	ContextKeyRole   = "role"
+	ContextKeyUserID contextKey = "userID"
+	ContextKeyRole   contextKey = "role"
 )
 
 func RequireAuth(next http.Handler) http.Handler {
