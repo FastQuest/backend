@@ -81,7 +81,10 @@ func registerPaths(r *mux.Router) {
 
 	r.HandleFunc("/exam", exam.CreateExam).Methods("POST")
 
-	r.HandleFunc("/submissions", submission.CreateSubmission).Methods("POST")
-
 	r.PathPrefix("/swagger/").Handler(httpSwagger.WrapHandler)
+
+	protectedRouter := r.PathPrefix("/").Subrouter()
+	protectedRouter.Use(auth.RequireAuth)
+
+	protectedRouter.HandleFunc("/submissions", submission.CreateSubmission).Methods("POST")
 }
