@@ -2,6 +2,7 @@ package submission
 
 import (
 	"flashquest/pkg/models"
+	"strings"
 
 	"gorm.io/gorm"
 )
@@ -36,4 +37,30 @@ func getSubmissionsByUserID(db *gorm.DB, userID uint, questionSetID *uint, page,
 	}
 
 	return submissions, total, nil
+}
+
+func getSubmissionByID(db *gorm.DB, submissionID uint, includes string) (*models.Submission, error) {
+	var submission models.Submission
+
+	query := db.Where("id = ?", submissionID)
+
+	// Parse includes parameter
+	if includes != "" {
+		includeList := strings.Split(includes, ",")
+		for _, inc := range includeList {
+			inc = strings.TrimSpace(inc)
+			switch inc {
+			case "user":
+				query = query.Preload("User")
+			case "answers":
+				query = query.Preload("Answers")
+			}
+		}
+	}
+
+	if err := query.First(&submission).Error; err != nil {
+		return nil, err
+	}
+
+	return &submission, nil
 }

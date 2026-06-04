@@ -7,6 +7,8 @@ import (
 	"math"
 	"net/http"
 	"strconv"
+
+	"github.com/gorilla/mux"
 )
 
 // CreateSubmission godoc
@@ -61,7 +63,7 @@ func CreateSubmission(w http.ResponseWriter, r *http.Request) {
 // @Failure 401 {string} string "Unauthorized"
 // @Failure 500 {string} string "Internal server error"
 // @Security BearerAuth
-// @Router /users/submissions [get]
+// @Router /submissions [get]
 func GetUserSubmissions(w http.ResponseWriter, r *http.Request) {
 	userIDValue := r.Context().Value(auth.ContextKeyUserID)
 	if userIDValue == nil {
@@ -117,4 +119,56 @@ func GetUserSubmissions(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
+}
+
+// GetSubmission godoc
+// @Summary Get a specific submission
+// @Description Get a specific submission with optional includes for user and answers
+// @Tags Submissions
+// @Accept json
+// @Produce json
+// @Param id path integer true "Submission ID"
+// @Param include query string false "Comma-separated includes (user, answers)"
+// @Success 200 {object} map[string]interface{} "Successfully retrieved submission"
+// @Failure 401 {string} string "Unauthorized"
+// @Failure 404 {string} string "Submission not found"
+// @Failure 500 {string} string "Internal server error"
+// @Security BearerAuth
+// @Router /submissions/{id} [get]
+func GetSubmission(w http.ResponseWriter, r *http.Request) {
+	userIDValue := r.Context().Value(auth.ContextKeyUserID)
+	if userIDValue == nil {
+		http.Error(w, "User ID not found", http.StatusUnauthorized)
+		return
+	}
+	userID := userIDValue.(uint)
+
+	submissionID := mux.Vars(r)["id"]
+	if submissionID == "" {
+		http.Error(w, "ID parameter is required", http.StatusBadRequest)
+		return
+	}
+
+	id, err := strconv.ParseUint(submissionID, 10, 32)
+	if err != nil {
+		http.Error(w, "Invalid submission ID", http.StatusBadRequest)
+		return
+	}
+
+	includes := r.URL.Query().Get("include")
+
+	db := getDB()
+	submission, err := getSubmissionByID(db, uint(id), includes)
+	if err != nil {
+		http.Error(w, "Submission not found", http.StatusNotFound)
+		return
+	}
+
+	if submission.UserID != userID {
+		http.Error(w, "Unauthorized", http.StatusForbidden)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(submission)
 }
