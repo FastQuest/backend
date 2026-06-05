@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"flashquest/internal/ai"
+	"flashquest/internal/answer"
 	"flashquest/internal/auth"
 	"flashquest/internal/exam"
 	"flashquest/internal/question"
@@ -91,4 +92,5 @@ func registerPaths(r *mux.Router) {
 	protectedRouter.HandleFunc("/submissions", submission.GetUserSubmissions).Methods("GET")
 	protectedRouter.HandleFunc("/submissions/{id}", submission.GetSubmission).Methods("GET")
 	protectedRouter.HandleFunc("/users/me", user.GetCurrentUser).Methods("GET")
+	protectedRouter.HandleFunc("/answers/performance", answer.GetSubjectPerfomanceHandler).Methods("GET")
 }
