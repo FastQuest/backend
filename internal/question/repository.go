@@ -58,3 +58,31 @@ func deleteQuestionByID(db *gorm.DB, id string) (int64, error) {
 	}
 	return result.RowsAffected, nil
 }
+
+func GetQuestionFilters(db *gorm.DB) (*QuestionFilters, error) {
+	var filters QuestionFilters
+
+	err := db.Table("subject").
+		Select("id, name").
+		Order("name ASC").
+		Scan(&filters.Subjects).Error
+	if err != nil {
+		return nil, err
+	}
+
+	err = db.Table("source_exam_instance").
+		Select("id, edition AS name").
+		Order("edition ASC").
+		Scan(&filters.Sources).Error
+
+	err = db.Table("source_exam_instance").
+		Distinct("year").
+		Where("year IS NOT NULL").
+		Order("year DESC").
+		Pluck("year", &filters.Years).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return &filters, nil
+}

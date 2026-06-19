@@ -39,3 +39,24 @@ func GetUserPerfomace(db *gorm.DB, userID int) ([]SubjectPerformance, error) {
 
 	return performances, nil
 }
+
+func GetUserGeralPerfomace(db *gorm.DB, userID int) (OverallPerformance, error) {
+	var performance OverallPerformance
+
+	err := db.Table("submission s").
+		Select(`
+		COUNT(a.id) AS total_answers,
+		SUM(CASE WHEN a.is_correct THEN 1 ELSE 0 END) AS total_correct,
+		ROUND((SUM(CASE WHEN a.is_correct THEN 1 ELSE 0 END) * 100.0) / NULLIF(COUNT(a.id), 0), 2) AS percentual_correct
+	`).
+		Joins("JOIN answer a ON a.submission_id = s.id").
+		Where("s.user_id = ?", userID).
+		Where("s.deleted_at IS NULL AND a.deleted_at IS NULL").
+		Scan(&performance).Error
+
+	if err != nil {
+		return OverallPerformance{}, err
+	}
+
+	return performance, nil
+}

@@ -9,6 +9,12 @@ type CreateAnswerRequest struct {
 	IsCorrect        bool `gorm:"not null" json:"is_correct"`
 }
 
+type OverallPerformance struct {
+	TotalAnswers      int     `gorm:"column:total_answers" json:"total_answers"`
+	TotalCorrect      int     `gorm:"column:total_correct" json:"total_correct"`
+	PercentualCorrect float64 `gorm:"column:percentual_correct" json:"percentual_correct"`
+}
+
 type SubjectPerformance struct {
 	Subject           models.Subject `gorm:"embedded" json:"subject"`
 	TotalAnswers      int            `gorm:"column:total_answers" json:"total_answers"`

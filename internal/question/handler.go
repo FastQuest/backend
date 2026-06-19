@@ -208,6 +208,34 @@ func GetQuestion(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// GetQuestionFilters godoc
+// @Summary Get question filters
+// @Description Retrieve filters for questions.
+// @Tags Questions
+// @Accept json
+// @Produce json
+// @Success 200 {object} QuestionFilters
+// @Failure 500 {string} string "Internal server error"
+// @Router /questions/filters [get]
+func GetQuestionFiltersHandler(w http.ResponseWriter, r *http.Request) {
+	db := getDB()
+	if db == nil {
+		http.Error(w, "Database connection not established", http.StatusInternalServerError)
+		return
+	}
+
+	filters, err := GetQuestionFilters(db)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Error fetching question filters: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(filters); err != nil {
+		http.Error(w, "Error encoding response", http.StatusInternalServerError)
+	}
+}
+
 // GetQuestionsByArray godoc
 // @Summary Get multiple questions by array of IDs
 // @Description Retrieve multiple questions by providing an array of their IDs in the request body.

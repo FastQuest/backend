@@ -6,8 +6,8 @@ type SubjectResponse struct {
 }
 
 type Subject struct {
-	ID   uint   `gorm:"primaryKey"`
-	Name string `gorm:"not null"`
+	ID   uint   `gorm:"primaryKey" json:"id"`
+	Name string `gorm:"not null" json:"name"`
 }
 
 func (s Subject) ToResponse() SubjectResponse {

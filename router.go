@@ -60,6 +60,7 @@ func registerPaths(r *mux.Router) {
 	// Question Requests
 	r.HandleFunc("/questions", question.CreateQuestion).Methods("POST") //Updated
 	r.HandleFunc("/questions", question.GetQuestions).Methods("GET")
+	r.HandleFunc("/questions/filters", question.GetQuestionFiltersHandler).Methods("GET")
 	r.HandleFunc("/questions/by-ids", question.GetQuestionsByArray).Methods("POST")
 	r.HandleFunc("/questions/{id}", question.GetQuestion).Methods("GET")
 	r.HandleFunc("/questions/{id}", question.DeleteQuestion).Methods("DELETE")
@@ -93,4 +94,5 @@ func registerPaths(r *mux.Router) {
 	protectedRouter.HandleFunc("/submissions/{id}", submission.GetSubmission).Methods("GET")
 	protectedRouter.HandleFunc("/users/me", user.GetCurrentUser).Methods("GET")
 	protectedRouter.HandleFunc("/answers/performance", answer.GetSubjectPerfomanceHandler).Methods("GET")
+	protectedRouter.HandleFunc("/answers/overall-performance", answer.GetUserOverallPerfomanceHandler).Methods("GET")
 }
