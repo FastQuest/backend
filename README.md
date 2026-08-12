@@ -96,6 +96,41 @@ A documentação interativa da API estará disponível em: `http://localhost:808
 
 ---
 
+# CI/CD — Pipeline de Integração Contínua
+
+O projeto utiliza **GitHub Actions** para executar os testes automaticamente a cada `push` ou `pull request` para a branch `main`.
+
+## Como funciona
+
+O workflow está definido em [`.github/workflows/ci.yml`](.github/workflows/ci.yml) e executa os seguintes passos:
+
+1. **Checkout** — Clona o repositório no runner.
+2. **Set up Go** — Instala a versão do Go definida no `go.mod`.
+3. **Download dependencies** — Baixa as dependências via `go mod download` (com cache).
+4. **Run tests** — Executa `go test ./...` em todos os pacotes do projeto.
+
+## Quando é executado
+
+| Evento | Branches |
+| --- | --- |
+| `push` | `main` |
+| `pull_request` | `main` |
+
+## Testes cobertos
+
+| Pacote | Testes |
+| --- | --- |
+| `internal/auth` | Register, Login, validação de domínio/role, credenciais inválidas, enumeração de usuário |
+| `pkg/security/jwt` | Assinatura e parse RS256, rejeição de token expirado/inválido |
+| `pkg/security/password` | Hash e comparação de senha |
+| `pkg/security/token` | Geração e verificação de hash de refresh token |
+| `pkg/models` | Shape e TableName dos modelos de autenticação |
+| `pkg/apiresp` | WriteError, WriteJSON e fallback de erro de encode |
+
+> Para rodar os testes localmente: `go test ./...`
+
+---
+
 # Tecnologias
 
 | Tecnologia | Finalidade |
