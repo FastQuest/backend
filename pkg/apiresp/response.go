@@ -2,6 +2,7 @@ package apiresp
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 )
 
@@ -29,6 +30,7 @@ func WriteJSON(w http.ResponseWriter, status int, payload any) {
 func writeJSON(w http.ResponseWriter, status int, payload any) {
 	body, err := json.Marshal(payload)
 	if err != nil {
+		log.Printf("apiresp: failed to marshal payload of type %T: %v", payload, err)
 		writeFallbackInternalError(w)
 		return
 	}

@@ -1,8 +1,12 @@
 package apiresp_test
 
 import (
+	"bytes"
+	"log"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"strings"
 	"testing"
 
 	"flashquest/pkg/apiresp"
@@ -50,7 +54,15 @@ func TestWriteJSON(t *testing.T) {
 func TestWriteJSONEncodeFailureFallback(t *testing.T) {
 	rr := httptest.NewRecorder()
 
+	var logs bytes.Buffer
+	log.SetOutput(&logs)
+	defer log.SetOutput(os.Stderr)
+
 	apiresp.WriteJSON(rr, http.StatusCreated, map[string]any{"invalid": make(chan int)})
+
+	if !strings.Contains(logs.String(), "failed to marshal payload") {
+		t.Fatalf("expected marshal failure to be logged, got %q", logs.String())
+	}
 
 	if rr.Code != http.StatusInternalServerError {
 		t.Fatalf("expected status %d, got %d", http.StatusInternalServerError, rr.Code)
