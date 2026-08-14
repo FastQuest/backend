@@ -15,6 +15,11 @@ type errorEnvelope struct {
 	} `json:"error"`
 }
 
+type paginatedEnvelope struct {
+	Data any        `json:"data"`
+	Meta Pagination `json:"meta"`
+}
+
 func WriteError(w http.ResponseWriter, status int, code, message string) {
 	resp := errorEnvelope{}
 	resp.Error.Code = code
@@ -25,6 +30,12 @@ func WriteError(w http.ResponseWriter, status int, code, message string) {
 
 func WriteJSON(w http.ResponseWriter, status int, payload any) {
 	writeJSON(w, status, payload)
+}
+
+// WritePaginatedJSON writes a list response using the standard envelope:
+// the items under "data" and the pagination info under "meta".
+func WritePaginatedJSON(w http.ResponseWriter, status int, data any, meta Pagination) {
+	writeJSON(w, status, paginatedEnvelope{Data: data, Meta: meta})
 }
 
 func writeJSON(w http.ResponseWriter, status int, payload any) {
