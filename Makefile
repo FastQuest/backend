@@ -16,6 +16,9 @@ check-env:
 		exit 1; \
 	fi
 
+check-jwt: check-env
+	@sh scripts/gen_jwt_keys.sh
+
 setup: check-go
 	@echo "Instalando Swagger e Goose..."
 	go install github.com/swaggo/swag/cmd/swag@latest
@@ -26,7 +29,7 @@ db-up: check-env
 	@echo "Rodando migrações..."
 	$(GOOSE) up
 
-run: check-go check-env
+run: check-go check-env check-jwt
 	@if [ ! -d "docs" ]; then \
 		echo "⚠️  Aviso: Pasta 'docs' não encontrada. Gerando o Swagger automaticamente..."; \
 		$(SWAG) init; \
