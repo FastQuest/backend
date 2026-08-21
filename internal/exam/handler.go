@@ -2,9 +2,28 @@ package exam
 
 import (
 	"encoding/json"
+	"flashquest/internal/question"
+	"flashquest/internal/questionoption"
+	"flashquest/internal/questionset"
 	"fmt"
 	"net/http"
 )
+
+type Handler struct {
+	examRepository          *Repository
+	questionRepository      *question.Repository
+	questionOptionRepository *questionoption.Repository
+	questionSetRepository   *questionset.Repository
+}
+
+func NewHandler(examRepository *Repository, questionRepository *question.Repository, questionOptionRepository *questionoption.Repository, questionSetRepository *questionset.Repository) *Handler {
+	return &Handler{
+		examRepository:           examRepository,
+		questionRepository:       questionRepository,
+		questionOptionRepository: questionOptionRepository,
+		questionSetRepository:    questionSetRepository,
+	}
+}
 
 // CreateExam godoc
 // @Summary Create a new exam with questions list
@@ -17,7 +36,7 @@ import (
 // @Failure 400 {string} string "Invalid request body or malformed JSON"
 // @Failure 500 {string} string "Internal server error during exam creation"
 // @Router /exams [post]
-func CreateExam(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) CreateExam(w http.ResponseWriter, r *http.Request) {
 	var newExam NewExam
 
 	err := json.NewDecoder(r.Body).Decode(&newExam)
@@ -27,7 +46,7 @@ func CreateExam(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response, err := createExamPayload(newExam)
+	response, err := CreateExamPayload(h.examRepository, h.questionRepository, h.questionOptionRepository, h.questionSetRepository, newExam)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Error creating exam: %v", err), http.StatusInternalServerError)
 		return

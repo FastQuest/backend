@@ -11,8 +11,6 @@ import (
 	"gorm.io/gorm/logger"
 )
 
-var DB *gorm.DB
-
 func InitDB() *gorm.DB {
 	env := os.Getenv("RAILWAY_ENVIRONMENT")
 	if env == "" {
@@ -56,14 +54,6 @@ func InitDB() *gorm.DB {
 		log.Fatal("Failed to ping database:", err)
 	}
 
-	DB = db
 	log.Println("Database connection established successfully")
 	return db
-}
-
-func GetDB() *gorm.DB {
-	if DB == nil {
-		log.Fatal("Database connection not initialized. Call InitDB() first.")
-	}
-	return DB
 }

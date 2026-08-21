@@ -32,7 +32,7 @@ go vet ./...
   - **repository**: GORM queries and persistence helpers
   - **service**: internal orchestration/validation methods used across modules (especially by AI flows)
   - **dto**: request payload types
-- Persistence uses a shared global GORM connection from `internal/platform/database` (`database.GetDB()`), backed by PostgreSQL.
+- Persistence uses the `*gorm.DB` returned by `internal/platform/database.InitDB()` and injected into repositories, backed by PostgreSQL.
 - Shared data contracts live in `pkg/models`; response shaping is done via `ToResponse()` methods and include scopes like `ApplyQuestionIncludes` / `ApplyQuestionSetIncludes`.
 - API contracts are maintained in two places:
   - Swagger artifacts under `docs/` (`swagger.yaml`, `swagger.json`, generated `docs.go`)

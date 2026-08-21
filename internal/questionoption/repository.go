@@ -1,14 +1,21 @@
 package questionoption
 
 import (
-	database "flashquest/internal/platform/database"
 	"flashquest/pkg/models"
 
 	"gorm.io/gorm"
 )
 
-func getDB() *gorm.DB {
-	return database.GetDB()
+type Repository struct {
+	db *gorm.DB
+}
+
+func NewRepository(db *gorm.DB) *Repository {
+	return &Repository{db: db}
+}
+
+func (r *Repository) DB() *gorm.DB {
+	return r.db
 }
 
 func findQuestionByID(db *gorm.DB, questionID string) (*models.Question, error) {

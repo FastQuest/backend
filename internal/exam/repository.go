@@ -2,18 +2,21 @@ package exam
 
 import (
 	"errors"
-	database "flashquest/internal/platform/database"
 	"flashquest/pkg/models"
 
 	"gorm.io/gorm"
 )
 
-func getDB() *gorm.DB {
-	return database.GetDB()
+type Repository struct {
+	db *gorm.DB
 }
 
-func GetInstanceWithSource(eiID int, ei *models.ExamInstance) error {
-	db := getDB()
+func NewRepository(db *gorm.DB) *Repository {
+	return &Repository{db: db}
+}
+
+func (r *Repository) GetInstanceWithSource(eiID int, ei *models.ExamInstance) error {
+	db := r.db
 	if db == nil {
 		return errors.New("database connection not established")
 	}
@@ -29,3 +32,4 @@ func GetInstanceWithSource(eiID int, ei *models.ExamInstance) error {
 
 	return nil
 }
+

@@ -1,7 +1,6 @@
 package user
 
 import (
-	"flashquest/internal/platform/database"
 	"flashquest/pkg/models"
 )
 
@@ -16,8 +15,7 @@ func NewService(repository *Repository) *Service {
 }
 
 func (s *Service) GetCurrentUser(userID uint) (*models.UserResponse, error) {
-	db := database.GetDB()
-	user, err := s.repository.GetUserByID(db, userID)
+	user, err := s.repository.GetUserByID(userID)
 	if err != nil {
 		return nil, err
 	}

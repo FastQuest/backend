@@ -17,6 +17,20 @@ import (
 
 var aiClient *genai.Client
 
+type Service struct {
+	questionRepository       *question.Repository
+	questionOptionRepository *questionoption.Repository
+	questionSetRepository    *questionset.Repository
+}
+
+func NewService(questionRepository *question.Repository, questionOptionRepository *questionoption.Repository, questionSetRepository *questionset.Repository) *Service {
+	return &Service{
+		questionRepository:       questionRepository,
+		questionOptionRepository: questionOptionRepository,
+		questionSetRepository:    questionSetRepository,
+	}
+}
+
 func InitGemini() {
 	ctx := context.Background()
 	client, err := genai.NewClient(ctx, nil)
@@ -161,17 +175,17 @@ func formatQuestionOption(questionID uint, aiAnswers ...AIAnswerResponse) []mode
 	return questionoptions
 }
 
-func addAIQuestion(aiQuestion AIQuestionResponse) {
+func (s *Service) addAIQuestion(aiQuestion AIQuestionResponse) {
 	q := formatQuestions(aiQuestion)[0]
-	question.SendQuestions(&q)
+	s.questionRepository.SendQuestions(&q)
 	log.Println("Successful Question Insert")
 
 	questionoptionsPayload := formatQuestionOption(q.ID, aiQuestion.Answers...)
-	questionoption.SendQuestionOptions(&questionoptionsPayload)
+	s.questionOptionRepository.SendQuestionOptions(&questionoptionsPayload)
 	log.Println("Successful QuestionOption Insert")
 }
 
-func addAIQuestionSet(aiQuestionSet AIQuestionSetResponse) error {
+func (s *Service) addAIQuestionSet(aiQuestionSet AIQuestionSetResponse) error {
 	questionSet := models.QuestionSet{
 		Name:        aiQuestionSet.Name,
 		Description: aiQuestionSet.Description,
@@ -181,13 +195,13 @@ func addAIQuestionSet(aiQuestionSet AIQuestionSetResponse) error {
 		Type:        "list",
 	}
 
-	errSendQS := questionset.SendQuestionSets(&questionSet)
+	errSendQS := s.questionSetRepository.SendQuestionSets(&questionSet)
 	if errSendQS != nil {
 		return errSendQS
 	}
 
 	questions := formatQuestions(aiQuestionSet.Questions...)
-	errSendQ := question.SendQuestions(helpers.PtrSlice(questions)...)
+	errSendQ := s.questionRepository.SendQuestions(helpers.PtrSlice(questions)...)
 	if errSendQ != nil {
 		return errSendQ
 	}
@@ -197,7 +211,7 @@ func addAIQuestionSet(aiQuestionSet AIQuestionSetResponse) error {
 		answers = append(answers, formatQuestionOption(questions[i].ID, q.Answers...)...)
 	}
 
-	errSendA := questionoption.SendQuestionOptions(&answers)
+	errSendA := s.questionOptionRepository.SendQuestionOptions(&answers)
 	if errSendA != nil {
 		return errSendA
 	}
@@ -211,7 +225,7 @@ func addAIQuestionSet(aiQuestionSet AIQuestionSetResponse) error {
 		})
 	}
 
-	errSendQSQ := questionset.SendQuestionSetQuestionInternal(helpers.PtrSlice(questionSetQuestion)...)
+	errSendQSQ := s.questionSetRepository.SendQuestionSetQuestionInternal(helpers.PtrSlice(questionSetQuestion)...)
 	if errSendQSQ != nil {
 		return errSendQSQ
 	}

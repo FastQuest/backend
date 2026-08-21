@@ -9,6 +9,14 @@ import (
 	"gorm.io/gorm"
 )
 
+type Handler struct {
+	repository *Repository
+}
+
+func NewHandler(repository *Repository) *Handler {
+	return &Handler{repository: repository}
+}
+
 // CreateSource godoc
 // @Summary Create a new source and exam instance (WIP)
 // @Description Creates a new source with its associated exam instance in a single transaction. Both source and exam instance are created atomically.
@@ -20,8 +28,8 @@ import (
 // @Failure 400 {string} string "Invalid request body or missing required fields (name and year are mandatory)"
 // @Failure 500 {string} string "Internal server error or database transaction failure"
 // @Router /sources [post]
-func CreateSource(w http.ResponseWriter, r *http.Request) {
-	db := getDB()
+func (h *Handler) CreateSource(w http.ResponseWriter, r *http.Request) {
+	db := h.repository.DB()
 	if db == nil {
 		http.Error(w, "Database connection error", http.StatusInternalServerError)
 		return

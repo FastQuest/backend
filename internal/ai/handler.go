@@ -7,7 +7,15 @@ import (
 	"net/http"
 )
 
-func PostAIGenQuestion(w http.ResponseWriter, r *http.Request) {
+type Handler struct {
+	service *Service
+}
+
+func NewHandler(service *Service) *Handler {
+	return &Handler{service: service}
+}
+
+func (h *Handler) PostAIGenQuestion(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		http.Error(w, "Failed to read request body", http.StatusInternalServerError)
@@ -22,7 +30,7 @@ func PostAIGenQuestion(w http.ResponseWriter, r *http.Request) {
 	}
 
 	log.Println("Successful POST")
-	addAIQuestion(genQuestion(test.Text))
+	h.service.addAIQuestion(genQuestion(test.Text))
 }
 
 // GetQuestions godoc
@@ -35,7 +43,7 @@ func PostAIGenQuestion(w http.ResponseWriter, r *http.Request) {
 // @Success 201
 // @Failure 500 {string} string "Internal server error"
 // @Router /ai/gen-questionset [post]
-func PostAIGenQuestionSet(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) PostAIGenQuestionSet(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		http.Error(w, "Failed to read request body", http.StatusInternalServerError)
@@ -49,7 +57,7 @@ func PostAIGenQuestionSet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	errAddQS := addAIQuestionSet(genQuestionSet(test.Text))
+	errAddQS := h.service.addAIQuestionSet(genQuestionSet(test.Text))
 	if errAddQS != nil {
 		http.Error(w, "Failed to generate question set", http.StatusInternalServerError)
 	}

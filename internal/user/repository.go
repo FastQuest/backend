@@ -6,15 +6,17 @@ import (
 	"gorm.io/gorm"
 )
 
-type Repository struct{}
-
-func NewRepository() *Repository {
-	return &Repository{}
+type Repository struct {
+	db *gorm.DB
 }
 
-func (r *Repository) GetUserByID(db *gorm.DB, userID uint) (*models.User, error) {
+func NewRepository(db *gorm.DB) *Repository {
+	return &Repository{db: db}
+}
+
+func (r *Repository) GetUserByID(userID uint) (*models.User, error) {
 	var user models.User
-	if err := db.Where("id = ?", userID).First(&user).Error; err != nil {
+	if err := r.db.Where("id = ?", userID).First(&user).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return nil, nil
 		}

@@ -3,25 +3,18 @@ package submission
 import (
 	"errors"
 	"flashquest/internal/answer"
-	"flashquest/internal/platform/database"
 	"flashquest/internal/questionoption"
 	"flashquest/pkg/models"
-
-	"gorm.io/gorm"
 )
 
-func getDB() *gorm.DB {
-	return database.GetDB()
-}
-
-func CreateSubmissionPayload(req CreateSubmissionRequest) (models.Submission, error) {
+func (r *Repository) CreateSubmissionPayload(req CreateSubmissionRequest) (models.Submission, error) {
 	optionsIDs := make([]uint, len(req.Answers))
 
 	for i, a := range req.Answers {
 		optionsIDs[i] = uint(a.OptionID)
 	}
 
-	db := getDB()
+	db := r.db
 	if db == nil {
 		return models.Submission{}, errors.New("database connection not established")
 	}
@@ -56,7 +49,7 @@ func CreateSubmissionPayload(req CreateSubmissionRequest) (models.Submission, er
 		}
 	}
 
-	err = answer.SendAnswers(&answers)
+	err = answer.NewService(answer.NewRepository(r.db)).SendAnswers(&answers)
 	if err != nil {
 		return models.Submission{}, err
 	}

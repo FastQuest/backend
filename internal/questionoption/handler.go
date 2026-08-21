@@ -12,6 +12,14 @@ import (
 	"gorm.io/gorm"
 )
 
+type Handler struct {
+	repository *Repository
+}
+
+func NewHandler(repository *Repository) *Handler {
+	return &Handler{repository: repository}
+}
+
 // @Summary Create question options for a question
 // @Description Creates one or more question options linked to the question identified by its ID.
 // @Tags QuestionOptions
@@ -22,7 +30,7 @@ import (
 // @Failure 404 {string} string "Question not found"
 // @Failure 500 {string} string "Internal server error"
 // @Router /questions/{id}/question-options [post]
-func PostQuestionOptions(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) PostQuestionOptions(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	questionID := vars["id"]
 
@@ -31,7 +39,7 @@ func PostQuestionOptions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	db := getDB()
+	db := h.repository.DB()
 	if db == nil {
 		http.Error(w, "Database connection not established", http.StatusInternalServerError)
 		return
@@ -95,7 +103,7 @@ func PostQuestionOptions(w http.ResponseWriter, r *http.Request) {
 // @Failure 404 {string} string "No question options found for this question"
 // @Failure 500 {string} string "Internal server error"
 // @Router /questions/{id}/question-options [get]
-func GetQuestionOptions(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) GetQuestionOptions(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	questionID := vars["id"]
 
@@ -104,7 +112,7 @@ func GetQuestionOptions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	db := getDB()
+	db := h.repository.DB()
 	if db == nil {
 		http.Error(w, "Database connection not established", http.StatusInternalServerError)
 		return
@@ -136,7 +144,7 @@ func GetQuestionOptions(w http.ResponseWriter, r *http.Request) {
 // @Failure 400 {string} string "Invalid request body"
 // @Failure 500 {string} string "Internal server error"
 // @Router /question-options/by-ids [post]
-func GetQuestionOptionsByIDArray(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) GetQuestionOptionsByIDArray(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		http.Error(w, "Failed to read request body", http.StatusInternalServerError)
@@ -150,7 +158,7 @@ func GetQuestionOptionsByIDArray(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	db := getDB()
+	db := h.repository.DB()
 	if db == nil {
 		http.Error(w, "Database connection not established", http.StatusInternalServerError)
 		return

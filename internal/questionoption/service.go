@@ -6,14 +6,14 @@ import (
 	"fmt"
 )
 
-func SendQuestionOptions(qo *[]models.QuestionOption) error {
+func (r *Repository) SendQuestionOptions(qo *[]models.QuestionOption) error {
 	for i, qo := range *qo {
 		if qo.Text == "" {
 			return fmt.Errorf("questionOption.Text at index %d cannot be empty", i)
 		}
 	}
 
-	db := getDB()
+	db := r.db
 	if db == nil {
 		return errors.New("database connection not established")
 	}

@@ -18,6 +18,14 @@ import (
 	"gorm.io/gorm"
 )
 
+type Handler struct {
+	repository *Repository
+}
+
+func NewHandler(repository *Repository) *Handler {
+	return &Handler{repository: repository}
+}
+
 // CreateQuestion godoc
 // @Summary Create a new question or multiple questions
 // @Description Creates a single question or a batch of questions based on the provided JSON body (object or array of objects).
@@ -29,7 +37,7 @@ import (
 // @Failure 400 {string} string "Invalid request body format or missing fields"
 // @Failure 500 {string} string "Internal server error"
 // @Router /questions [post]
-func CreateQuestion(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) CreateQuestion(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		http.Error(w, "Failed to read request body", http.StatusInternalServerError)
@@ -56,7 +64,7 @@ func CreateQuestion(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	db := getDB()
+	db := h.repository.DB()
 	if db == nil {
 		http.Error(w, "Database connection not established", http.StatusInternalServerError)
 		return
@@ -109,7 +117,7 @@ func CreateQuestion(w http.ResponseWriter, r *http.Request) {
 // @Success 200 {object} map[string]interface{} "Paginated response containing data and pagination metadata"
 // @Failure 500 {string} string "Internal server error"
 // @Router /questions [get]
-func GetQuestions(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) GetQuestions(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query()
 	page := parseInt(query.Get("page"), 1)
 	limit := parseInt(query.Get("perPage"), 10)
@@ -122,7 +130,7 @@ func GetQuestions(w http.ResponseWriter, r *http.Request) {
 		orderBy = "created_at desc"
 	}
 
-	db := getDB()
+	db := h.repository.DB()
 	if db == nil {
 		http.Error(w, "Database connection not established", http.StatusInternalServerError)
 		return
@@ -172,7 +180,7 @@ func GetQuestions(w http.ResponseWriter, r *http.Request) {
 // @Failure 404 {string} string "Question not found"
 // @Failure 500 {string} string "Internal server error"
 // @Router /questions/{id} [get]
-func GetQuestion(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) GetQuestion(w http.ResponseWriter, r *http.Request) {
 	id := mux.Vars(r)["id"]
 	if id == "" {
 		http.Error(w, "ID parameter is required", http.StatusBadRequest)
@@ -186,7 +194,7 @@ func GetQuestion(w http.ResponseWriter, r *http.Request) {
 		includes = strings.Split(includeParam, ",")
 	}
 
-	db := getDB()
+	db := h.repository.DB()
 	if db == nil {
 		http.Error(w, "Database connection not established", http.StatusInternalServerError)
 		return
@@ -217,8 +225,8 @@ func GetQuestion(w http.ResponseWriter, r *http.Request) {
 // @Success 200 {object} QuestionFilters
 // @Failure 500 {string} string "Internal server error"
 // @Router /questions/filters [get]
-func GetQuestionFiltersHandler(w http.ResponseWriter, r *http.Request) {
-	db := getDB()
+func (h *Handler) GetQuestionFiltersHandler(w http.ResponseWriter, r *http.Request) {
+	db := h.repository.DB()
 	if db == nil {
 		http.Error(w, "Database connection not established", http.StatusInternalServerError)
 		return
@@ -248,7 +256,7 @@ func GetQuestionFiltersHandler(w http.ResponseWriter, r *http.Request) {
 // @Failure 400 {string} string "Invalid JSON body or empty IDs array"
 // @Failure 500 {string} string "Internal server error"
 // @Router /questions/by-ids [post]
-func GetQuestionsByArray(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) GetQuestionsByArray(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query()
 	includeParam := query.Get("include")
 	var includes []string
@@ -262,7 +270,7 @@ func GetQuestionsByArray(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	db := getDB()
+	db := h.repository.DB()
 	if db == nil {
 		http.Error(w, "Database connection not established", http.StatusInternalServerError)
 		return
@@ -292,14 +300,14 @@ func GetQuestionsByArray(w http.ResponseWriter, r *http.Request) {
 // @Failure 404 {string} string "Question not found"
 // @Failure 500 {string} string "Internal server error"
 // @Router /questions/{id} [delete]
-func DeleteQuestion(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) DeleteQuestion(w http.ResponseWriter, r *http.Request) {
 	id := mux.Vars(r)["id"]
 	if id == "" {
 		http.Error(w, "ID parameter is required", http.StatusBadRequest)
 		return
 	}
 
-	db := getDB()
+	db := h.repository.DB()
 	if db == nil {
 		http.Error(w, "Database connection not established", http.StatusInternalServerError)
 		return

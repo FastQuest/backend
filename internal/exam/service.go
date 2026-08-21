@@ -3,16 +3,16 @@ package exam
 import (
 	"errors"
 	"flashquest/helpers"
-	"flashquest/internal/questionoption"
 	"flashquest/internal/question"
+	"flashquest/internal/questionoption"
 	"flashquest/internal/questionset"
 	"flashquest/pkg/models"
 	"fmt"
 	"time"
 )
 
-func SendExamInstance(ei ...*models.ExamInstance) error {
-	db := getDB()
+func (r *Repository) SendExamInstance(ei ...*models.ExamInstance) error {
+	db := r.db
 	if db == nil {
 		return errors.New("database connection not established")
 	}
@@ -24,10 +24,10 @@ func SendExamInstance(ei ...*models.ExamInstance) error {
 	return nil
 }
 
-func createExamPayload(newExam NewExam) (models.QuestionSetResponse, error) {
+func CreateExamPayload(examRepository *Repository, questionRepository *question.Repository, questionOptionRepository *questionoption.Repository, questionSetRepository *questionset.Repository, newExam NewExam) (models.QuestionSetResponse, error) {
 	exam := newExam.Exam
 
-	errSendE := SendExamInstance(&exam)
+	errSendE := examRepository.SendExamInstance(&exam)
 	if errSendE != nil {
 		return models.QuestionSetResponse{}, errSendE
 	}
@@ -41,7 +41,7 @@ func createExamPayload(newExam NewExam) (models.QuestionSetResponse, error) {
 		Type:        "list",
 	}
 
-	errSendQS := questionset.SendQuestionSets(&questionSet)
+	errSendQS := questionSetRepository.SendQuestionSets(&questionSet)
 	if errSendQS != nil {
 		return models.QuestionSetResponse{}, errSendQS
 	}
@@ -58,7 +58,7 @@ func createExamPayload(newExam NewExam) (models.QuestionSetResponse, error) {
 		})
 	}
 
-	errSendQ := question.SendQuestions(helpers.PtrSlice(questions)...)
+	errSendQ := questionRepository.SendQuestions(helpers.PtrSlice(questions)...)
 	if errSendQ != nil {
 		return models.QuestionSetResponse{}, errSendQ
 	}
@@ -74,7 +74,7 @@ func createExamPayload(newExam NewExam) (models.QuestionSetResponse, error) {
 		}
 	}
 
-	errSendQO := questionoption.SendQuestionOptions(&questionoptions)
+	errSendQO := questionOptionRepository.SendQuestionOptions(&questionoptions)
 	if errSendQO != nil {
 		return models.QuestionSetResponse{}, errSendQO
 	}
@@ -88,7 +88,7 @@ func createExamPayload(newExam NewExam) (models.QuestionSetResponse, error) {
 		})
 	}
 
-	errSendQSQ := questionset.SendQuestionSetQuestionInternal(helpers.PtrSlice(questionSetQuestion)...)
+	errSendQSQ := questionSetRepository.SendQuestionSetQuestionInternal(helpers.PtrSlice(questionSetQuestion)...)
 	if errSendQSQ != nil {
 		return models.QuestionSetResponse{}, errSendQSQ
 	}
