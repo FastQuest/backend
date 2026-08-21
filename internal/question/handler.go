@@ -3,7 +3,6 @@ package question
 import (
 	"encoding/json"
 	"errors"
-	filters "flashquest/pkg"
 	"flashquest/pkg/models"
 	"fmt"
 	"io"
@@ -15,7 +14,6 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
-	"gorm.io/gorm"
 )
 
 type Handler struct {
@@ -136,7 +134,7 @@ func (h *Handler) GetQuestions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	queryBuilder := applyFilters(db.Model(&models.Question{}), query)
+	queryBuilder := h.repository.ApplyFilters(query)
 	queryBuilder = queryBuilder.Order(orderBy)
 
 	total, err := countQuestions(queryBuilder)
@@ -202,7 +200,7 @@ func (h *Handler) GetQuestion(w http.ResponseWriter, r *http.Request) {
 
 	question, err := findQuestionByID(db, id, includes)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+		if errors.Is(err, ErrQuestionNotFound) {
 			http.Error(w, "Question not found", http.StatusNotFound)
 		} else {
 			http.Error(w, fmt.Sprintf("Error fetching question: %v", err), http.StatusInternalServerError)
@@ -232,7 +230,7 @@ func (h *Handler) GetQuestionFiltersHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	filters, err := GetQuestionFilters(db)
+	filters, err := h.repository.GetQuestionFilters()
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Error fetching question filters: %v", err), http.StatusInternalServerError)
 		return
@@ -325,15 +323,6 @@ func (h *Handler) DeleteQuestion(w http.ResponseWriter, r *http.Request) {
 	}
 
 	log.Printf("Question ID %s deleted successfully", id)
-}
-
-func applyFilters(query *gorm.DB, params map[string][]string) *gorm.DB {
-	for param, handler := range filters.QuestionFilters {
-		if values, exists := params[param]; exists && len(values) > 0 && values[0] != "" {
-			query = handler(values[0], query)
-		}
-	}
-	return query
 }
 
 func sendJSON(w http.ResponseWriter, data interface{}, statusCode int) {

@@ -1,10 +1,13 @@
 package questionoption
 
 import (
+	"errors"
 	"flashquest/pkg/models"
 
 	"gorm.io/gorm"
 )
+
+var ErrQuestionNotFound = errors.New("question not found")
 
 type Repository struct {
 	db *gorm.DB
@@ -21,6 +24,9 @@ func (r *Repository) DB() *gorm.DB {
 func findQuestionByID(db *gorm.DB, questionID string) (*models.Question, error) {
 	var question models.Question
 	if err := db.First(&question, questionID).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, ErrQuestionNotFound
+		}
 		return nil, err
 	}
 	return &question, nil

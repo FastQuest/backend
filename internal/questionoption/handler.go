@@ -9,7 +9,6 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"gorm.io/gorm"
 )
 
 type Handler struct {
@@ -47,7 +46,7 @@ func (h *Handler) PostQuestionOptions(w http.ResponseWriter, r *http.Request) {
 
 	question, err := findQuestionByID(db, questionID)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+		if errors.Is(err, ErrQuestionNotFound) {
 			http.Error(w, "Question not found", http.StatusNotFound)
 		} else {
 			http.Error(w, "Error checking question", http.StatusInternalServerError)
@@ -120,7 +119,7 @@ func (h *Handler) GetQuestionOptions(w http.ResponseWriter, r *http.Request) {
 
 	questionoptions, err := findQuestionOptionsByQuestionID(db, questionID)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+		if errors.Is(err, ErrQuestionNotFound) {
 			http.Error(w, "No question options found for this question", http.StatusNotFound)
 		} else {
 			http.Error(w, fmt.Sprintf("Error fetching question options: %v", err), http.StatusInternalServerError)

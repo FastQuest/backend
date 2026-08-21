@@ -10,7 +10,6 @@ import (
 	"strings"
 
 	"github.com/gorilla/mux"
-	"gorm.io/gorm"
 )
 
 type Handler struct {
@@ -41,12 +40,6 @@ func (h *Handler) CreateQuestionSet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	db := h.repository.DB()
-	if db == nil {
-		http.Error(w, "Database connection not established", http.StatusInternalServerError)
-		return
-	}
-
 	questionSet := models.QuestionSet{
 		Name:        newList.Name,
 		Type:        newList.Type,
@@ -55,25 +48,7 @@ func (h *Handler) CreateQuestionSet(w http.ResponseWriter, r *http.Request) {
 		IsPrivate:   newList.IsPrivate,
 	}
 
-	err = db.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Create(&questionSet).Error; err != nil {
-			return err
-		}
-
-		for index, questionID := range newList.Questions {
-			link := models.QuestionSetQuestion{
-				QuestionSetID: questionSet.ID,
-				QuestionID:    questionID,
-				Position:      index + 1,
-			}
-
-			if err := tx.Create(&link).Error; err != nil {
-				return err
-			}
-		}
-
-		return nil
-	})
+	err = h.repository.CreateQuestionSet(&questionSet, newList.Questions)
 
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Error creating question set: %v", err), http.StatusInternalServerError)
