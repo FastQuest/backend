@@ -2,6 +2,7 @@ package apiresp
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 )
 
@@ -12,6 +13,11 @@ type errorEnvelope struct {
 		Code    string `json:"code"`
 		Message string `json:"message"`
 	} `json:"error"`
+}
+
+type paginatedEnvelope struct {
+	Data any        `json:"data"`
+	Meta Pagination `json:"meta"`
 }
 
 func WriteError(w http.ResponseWriter, status int, code, message string) {
@@ -26,9 +32,16 @@ func WriteJSON(w http.ResponseWriter, status int, payload any) {
 	writeJSON(w, status, payload)
 }
 
+// WritePaginatedJSON writes a list response using the standard envelope:
+// the items under "data" and the pagination info under "meta".
+func WritePaginatedJSON(w http.ResponseWriter, status int, data any, meta Pagination) {
+	writeJSON(w, status, paginatedEnvelope{Data: data, Meta: meta})
+}
+
 func writeJSON(w http.ResponseWriter, status int, payload any) {
 	body, err := json.Marshal(payload)
 	if err != nil {
+		log.Printf("apiresp: failed to marshal payload of type %T: %v", payload, err)
 		writeFallbackInternalError(w)
 		return
 	}

@@ -3,7 +3,7 @@ package ai
 import (
 	"context"
 	"encoding/json"
-	"flashquest/helpers"
+	"flashquest/pkg/sliceutil"
 	"flashquest/internal/questionoption"
 	"flashquest/internal/question"
 	"flashquest/internal/questionset"
@@ -187,7 +187,7 @@ func addAIQuestionSet(aiQuestionSet AIQuestionSetResponse) error {
 	}
 
 	questions := formatQuestions(aiQuestionSet.Questions...)
-	errSendQ := question.SendQuestions(helpers.PtrSlice(questions)...)
+	errSendQ := question.SendQuestions(sliceutil.PtrSlice(questions)...)
 	if errSendQ != nil {
 		return errSendQ
 	}
@@ -211,7 +211,7 @@ func addAIQuestionSet(aiQuestionSet AIQuestionSetResponse) error {
 		})
 	}
 
-	errSendQSQ := questionset.SendQuestionSetQuestionInternal(helpers.PtrSlice(questionSetQuestion)...)
+	errSendQSQ := questionset.SendQuestionSetQuestionInternal(sliceutil.PtrSlice(questionSetQuestion)...)
 	if errSendQSQ != nil {
 		return errSendQSQ
 	}

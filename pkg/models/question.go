@@ -4,6 +4,8 @@ import (
 	"time"
 
 	"gorm.io/gorm"
+
+	"flashquest/pkg/apiresp"
 )
 
 type QuestionDoc struct {
@@ -98,8 +100,8 @@ func ApplyQuestionIncludes(includes []string) func(*gorm.DB) *gorm.DB {
 }
 
 type QuestionListResponse struct {
-	Data       []QuestionDoc `json:"data"`
-	Pagination Pagination    `json:"pagination"`
+	Data       []QuestionDoc      `json:"data"`
+	Pagination apiresp.Pagination `json:"pagination"`
 }
 
 func (Question) TableName() string {

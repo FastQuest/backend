@@ -2,7 +2,7 @@ package exam
 
 import (
 	"errors"
-	"flashquest/helpers"
+	"flashquest/pkg/sliceutil"
 	"flashquest/internal/questionoption"
 	"flashquest/internal/question"
 	"flashquest/internal/questionset"
@@ -58,7 +58,7 @@ func createExamPayload(newExam NewExam) (models.QuestionSetResponse, error) {
 		})
 	}
 
-	errSendQ := question.SendQuestions(helpers.PtrSlice(questions)...)
+	errSendQ := question.SendQuestions(sliceutil.PtrSlice(questions)...)
 	if errSendQ != nil {
 		return models.QuestionSetResponse{}, errSendQ
 	}
@@ -88,7 +88,7 @@ func createExamPayload(newExam NewExam) (models.QuestionSetResponse, error) {
 		})
 	}
 
-	errSendQSQ := questionset.SendQuestionSetQuestionInternal(helpers.PtrSlice(questionSetQuestion)...)
+	errSendQSQ := questionset.SendQuestionSetQuestionInternal(sliceutil.PtrSlice(questionSetQuestion)...)
 	if errSendQSQ != nil {
 		return models.QuestionSetResponse{}, errSendQSQ
 	}
