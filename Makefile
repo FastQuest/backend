@@ -1,4 +1,7 @@
 GOPATH := $(shell go env GOPATH 2>/dev/null)
+ifeq ($(strip $(GOPATH)),)
+    GOPATH := $(HOME)/go
+endif
 SWAG := $(GOPATH)/bin/swag
 GOOSE := $(GOPATH)/bin/goose
 

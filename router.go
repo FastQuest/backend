@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"flashquest/internal/ai"
+	"flashquest/internal/answer"
 	"flashquest/internal/auth"
 	"flashquest/internal/exam"
 	"flashquest/internal/question"

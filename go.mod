@@ -1,6 +1,6 @@
 module flashquest
 
-go 1.24
+go 1.24.0
 
 require (
 	cloud.google.com/go v0.116.0 // indirect
