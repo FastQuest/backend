@@ -278,9 +278,6 @@ func generateTestKeyPair(t *testing.T) (string, string) {
 
 	return string(privatePEM), string(publicPEM)
 }
-<<<<<<< HEAD
-=======
-
 func TestRegisterValidateEmail(t *testing.T) {
 	privateKeyPEM, _ := generateTestKeyPair(t)
 	repo := &stubRepository{}
@@ -416,4 +413,3 @@ func TestLoginUserEnumeration(t *testing.T) {
 		t.Fatalf("expected ErrInvalidCredentials, got %v", err)
 	}
 }
->>>>>>> feat/auth-rs256
