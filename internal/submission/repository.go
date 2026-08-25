@@ -7,6 +7,18 @@ import (
 	"gorm.io/gorm"
 )
 
+type Repository struct {
+	db *gorm.DB
+}
+
+func NewRepository(db *gorm.DB) *Repository {
+	return &Repository{db: db}
+}
+
+func (r *Repository) DB() *gorm.DB {
+	return r.db
+}
+
 func createSubmission(db *gorm.DB, submission *models.Submission) (*models.Submission, error) {
 	result := db.Create(submission)
 	if result.Error != nil {

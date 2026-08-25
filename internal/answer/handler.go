@@ -3,9 +3,16 @@ package answer
 import (
 	"encoding/json"
 	"flashquest/internal/auth"
-	"flashquest/internal/platform/database"
 	"net/http"
 )
+
+type Handler struct {
+	repository *Repository
+}
+
+func NewHandler(repository *Repository) *Handler {
+	return &Handler{repository: repository}
+}
 
 // GetSubjectPerfomance godoc
 // @Summary Get user subjections performance
@@ -18,7 +25,7 @@ import (
 // @Failure 500 {string} string "Internal server error"
 // @Security BearerAuth
 // @Router /answers/performance [get]
-func GetSubjectPerfomanceHandler(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) GetSubjectPerfomanceHandler(w http.ResponseWriter, r *http.Request) {
 	userIDValue := r.Context().Value(auth.ContextKeyUserID)
 	if userIDValue == nil {
 		http.Error(w, "User ID not found", http.StatusUnauthorized)
@@ -33,9 +40,7 @@ func GetSubjectPerfomanceHandler(w http.ResponseWriter, r *http.Request) {
 
 	userID := int(userIDUint)
 
-	db := database.GetDB()
-
-	subjectPerformance, err := GetUserPerfomace(db, userID)
+	subjectPerformance, err := h.repository.GetUserPerfomace(userID)
 	if err != nil {
 		http.Error(w, "Error fetching subject performance", http.StatusInternalServerError)
 		return
@@ -58,7 +63,7 @@ func GetSubjectPerfomanceHandler(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {string} string "Internal server error"
 // @Security BearerAuth
 // @Router /answers/overall-performance [get]
-func GetUserOverallPerfomanceHandler(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) GetUserOverallPerfomanceHandler(w http.ResponseWriter, r *http.Request) {
 	userIDValue := r.Context().Value(auth.ContextKeyUserID)
 	if userIDValue == nil {
 		http.Error(w, "User ID not found", http.StatusUnauthorized)
@@ -73,9 +78,7 @@ func GetUserOverallPerfomanceHandler(w http.ResponseWriter, r *http.Request) {
 
 	userID := int(userIDUint)
 
-	db := database.GetDB()
-
-	overallPerformance, err := GetUserGeralPerfomace(db, userID)
+	overallPerformance, err := h.repository.GetUserGeralPerfomace(userID)
 	if err != nil {
 		http.Error(w, "Error fetching overall performance", http.StatusInternalServerError)
 		return

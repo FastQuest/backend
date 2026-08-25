@@ -11,9 +11,7 @@ import (
 	"gorm.io/gorm/logger"
 )
 
-var DB *gorm.DB
-
-func InitDB() *gorm.DB {
+func InitDB() (*gorm.DB, error) {
 	env := os.Getenv("RAILWAY_ENVIRONMENT")
 	if env == "" {
 		if err := godotenv.Load(); err != nil {
@@ -38,32 +36,23 @@ func InitDB() *gorm.DB {
 	}), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Warn),
 	})
-
-	if rawDB, err := db.DB(); err == nil {
-		rawDB.Exec("DEALLOCATE ALL")
-	}
-
 	if err != nil {
-		log.Fatal("Failed to connect to database:", err)
+		return nil, fmt.Errorf("failed to connect to database: %w", err)
 	}
 
-	sqlDB, err := db.DB()
+	rawDB, err := db.DB()
 	if err != nil {
-		log.Fatal("Failed to get generic DB interface:", err)
+		return nil, fmt.Errorf("failed to get generic DB interface: %w", err)
 	}
 
-	if err := sqlDB.Ping(); err != nil {
-		log.Fatal("Failed to ping database:", err)
+	if _, err := rawDB.Exec("DEALLOCATE ALL"); err != nil {
+		return nil, fmt.Errorf("failed to deallocate prepared statements: %w", err)
 	}
 
-	DB = db
+	if err := rawDB.Ping(); err != nil {
+		return nil, fmt.Errorf("failed to ping database: %w", err)
+	}
+
 	log.Println("Database connection established successfully")
-	return db
-}
-
-func GetDB() *gorm.DB {
-	if DB == nil {
-		log.Fatal("Database connection not initialized. Call InitDB() first.")
-	}
-	return DB
+	return db, nil
 }

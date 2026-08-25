@@ -1,19 +1,32 @@
 package questionoption
 
 import (
-	database "flashquest/internal/platform/database"
+	"errors"
 	"flashquest/pkg/models"
 
 	"gorm.io/gorm"
 )
 
-func getDB() *gorm.DB {
-	return database.GetDB()
+var ErrQuestionNotFound = errors.New("question not found")
+
+type Repository struct {
+	db *gorm.DB
+}
+
+func NewRepository(db *gorm.DB) *Repository {
+	return &Repository{db: db}
+}
+
+func (r *Repository) DB() *gorm.DB {
+	return r.db
 }
 
 func findQuestionByID(db *gorm.DB, questionID string) (*models.Question, error) {
 	var question models.Question
 	if err := db.First(&question, questionID).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, ErrQuestionNotFound
+		}
 		return nil, err
 	}
 	return &question, nil

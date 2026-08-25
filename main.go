@@ -28,9 +28,12 @@ import (
 // @BasePath /
 func main() {
 	fmt.Println("Running backend")
-	database.InitDB()
+	db, err := database.InitDB()
+	if err != nil {
+		log.Fatal(err)
+	}
 	ai.InitGemini()
 
-	srv := NewServer()
+	srv := NewServer(db)
 	log.Fatal(srv.ListenAndServe())
 }

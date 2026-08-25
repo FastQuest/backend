@@ -6,7 +6,7 @@ import (
 	"fmt"
 )
 
-func SendQuestionSets(qs ...*models.QuestionSet) error {
+func (r *Repository) SendQuestionSets(qs ...*models.QuestionSet) error {
 	for i, a := range qs {
 		if a.Name == "" {
 			return fmt.Errorf("questionSet.Name at index %d cannot be empty", i)
@@ -16,7 +16,7 @@ func SendQuestionSets(qs ...*models.QuestionSet) error {
 		}
 	}
 
-	db := getDB()
+	db := r.db
 	if db == nil {
 		return errors.New("database connection not established")
 	}
@@ -28,8 +28,8 @@ func SendQuestionSets(qs ...*models.QuestionSet) error {
 	return nil
 }
 
-func sendQuestionSetQuestion(qqs ...*models.QuestionSetQuestion) error {
-	db := getDB()
+func (r *Repository) sendQuestionSetQuestion(qqs ...*models.QuestionSetQuestion) error {
+	db := r.db
 	if db == nil {
 		return errors.New("database connection not established")
 	}
@@ -41,12 +41,12 @@ func sendQuestionSetQuestion(qqs ...*models.QuestionSetQuestion) error {
 	return nil
 }
 
-func SendQuestionSetQuestionInternal(qqs ...*models.QuestionSetQuestion) error {
-	return sendQuestionSetQuestion(qqs...)
+func (r *Repository) SendQuestionSetQuestionInternal(qqs ...*models.QuestionSetQuestion) error {
+	return r.sendQuestionSetQuestion(qqs...)
 }
 
-func GetQuestionSetByID(id string, includes []string) (*models.QuestionSet, error) {
-	db := getDB()
+func (r *Repository) GetQuestionSetByID(id string, includes []string) (*models.QuestionSet, error) {
+	db := r.db
 	if db == nil {
 		return nil, errors.New("database connection not established")
 	}

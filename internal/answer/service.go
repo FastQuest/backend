@@ -1,13 +1,19 @@
 package answer
 
 import (
-	"errors"
-	"flashquest/internal/platform/database"
 	"flashquest/pkg/models"
 	"fmt"
 )
 
-func SendAnswers(a *[]CreateAnswerRequest) error {
+type Service struct {
+	repository *Repository
+}
+
+func NewService(repository *Repository) *Service {
+	return &Service{repository: repository}
+}
+
+func (s *Service) SendAnswers(a *[]CreateAnswerRequest) error {
 	for i, ans := range *a {
 		if ans.QuestionOptionID == 0 {
 			return fmt.Errorf("questionOptionID at index %d cannot be zero", i)
@@ -32,12 +38,7 @@ func SendAnswers(a *[]CreateAnswerRequest) error {
 		}
 	}
 
-	db := database.GetDB()
-	if db == nil {
-		return errors.New("database connection not established")
-	}
-
-	if _, err := createAnswers(db, &answers); err != nil {
+	if _, err := s.repository.createAnswers(&answers); err != nil {
 		return fmt.Errorf("failed to create answer: %w", err)
 	}
 

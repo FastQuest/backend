@@ -1,14 +1,35 @@
 package question
 
 import (
-	database "flashquest/internal/platform/database"
+	"errors"
+	filters "flashquest/pkg"
 	"flashquest/pkg/models"
 
 	"gorm.io/gorm"
 )
 
-func getDB() *gorm.DB {
-	return database.GetDB()
+var ErrQuestionNotFound = errors.New("question not found")
+
+type Repository struct {
+	db *gorm.DB
+}
+
+func NewRepository(db *gorm.DB) *Repository {
+	return &Repository{db: db}
+}
+
+func (r *Repository) DB() *gorm.DB {
+	return r.db
+}
+
+func (r *Repository) ApplyFilters(params map[string][]string) *gorm.DB {
+	query := r.db.Model(&models.Question{})
+	for param, handler := range filters.QuestionFilters {
+		if values, exists := params[param]; exists && len(values) > 0 && values[0] != "" {
+			query = handler(values[0], query)
+		}
+	}
+	return query
 }
 
 func createQuestion(db *gorm.DB, question *models.Question) error {
@@ -38,6 +59,9 @@ func findQuestions(qb *gorm.DB, offset, limit int) ([]models.Question, error) {
 func findQuestionByID(db *gorm.DB, id string, includes []string) (*models.Question, error) {
 	var question models.Question
 	if err := db.Scopes(models.ApplyQuestionIncludes(includes)).Where("id = ?", id).First(&question).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, ErrQuestionNotFound
+		}
 		return nil, err
 	}
 	return &question, nil
@@ -59,10 +83,10 @@ func deleteQuestionByID(db *gorm.DB, id string) (int64, error) {
 	return result.RowsAffected, nil
 }
 
-func GetQuestionFilters(db *gorm.DB) (*QuestionFilters, error) {
+func (r *Repository) GetQuestionFilters() (*QuestionFilters, error) {
 	var filters QuestionFilters
 
-	err := db.Table("subject").
+	err := r.db.Table("subject").
 		Select("id, name").
 		Order("name ASC").
 		Scan(&filters.Subjects).Error
@@ -70,12 +94,12 @@ func GetQuestionFilters(db *gorm.DB) (*QuestionFilters, error) {
 		return nil, err
 	}
 
-	err = db.Table("source_exam_instance").
+	err = r.db.Table("source_exam_instance").
 		Select("id, edition AS name").
 		Order("edition ASC").
 		Scan(&filters.Sources).Error
 
-	err = db.Table("source_exam_instance").
+	err = r.db.Table("source_exam_instance").
 		Distinct("year").
 		Where("year IS NOT NULL").
 		Order("year DESC").

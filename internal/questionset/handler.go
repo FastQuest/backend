@@ -10,8 +10,15 @@ import (
 	"strings"
 
 	"github.com/gorilla/mux"
-	"gorm.io/gorm"
 )
+
+type Handler struct {
+	repository *Repository
+}
+
+func NewHandler(repository *Repository) *Handler {
+	return &Handler{repository: repository}
+}
 
 // CreateQuestionSet godoc
 // @Summary      Creates a new question set
@@ -24,18 +31,12 @@ import (
 // @Failure      400  {string}  string "Invalid JSON body"
 // @Failure      500  {string}  string "Error creating question set"
 // @Router       /question-sets [post]
-func CreateQuestionSet(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) CreateQuestionSet(w http.ResponseWriter, r *http.Request) {
 	var newList NewList
 
 	err := json.NewDecoder(r.Body).Decode(&newList)
 	if err != nil {
 		http.Error(w, "Invalid JSON body", http.StatusBadRequest)
-		return
-	}
-
-	db := getDB()
-	if db == nil {
-		http.Error(w, "Database connection not established", http.StatusInternalServerError)
 		return
 	}
 
@@ -47,25 +48,7 @@ func CreateQuestionSet(w http.ResponseWriter, r *http.Request) {
 		IsPrivate:   newList.IsPrivate,
 	}
 
-	err = db.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Create(&questionSet).Error; err != nil {
-			return err
-		}
-
-		for index, questionID := range newList.Questions {
-			link := models.QuestionSetQuestion{
-				QuestionSetID: questionSet.ID,
-				QuestionID:    questionID,
-				Position:      index + 1,
-			}
-
-			if err := tx.Create(&link).Error; err != nil {
-				return err
-			}
-		}
-
-		return nil
-	})
+	err = h.repository.CreateQuestionSet(&questionSet, newList.Questions)
 
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Error creating question set: %v", err), http.StatusInternalServerError)
@@ -86,7 +69,7 @@ func CreateQuestionSet(w http.ResponseWriter, r *http.Request) {
 // @Success      200      {object}  models.QuestionSetResponse
 // @Failure      404      {string}  string "Error fetching question set"
 // @Router       /question-sets/{id} [get]
-func GetQuestionSet(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) GetQuestionSet(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
 
@@ -97,7 +80,7 @@ func GetQuestionSet(w http.ResponseWriter, r *http.Request) {
 		includes = strings.Split(includeParam, ",")
 	}
 
-	questionSet, err := GetQuestionSetByID(id, includes)
+	questionSet, err := h.repository.GetQuestionSetByID(id, includes)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Error fetching question set: %v", err), http.StatusNotFound)
 		return
@@ -117,11 +100,11 @@ func GetQuestionSet(w http.ResponseWriter, r *http.Request) {
 // @Success      200     {array}   models.QuestionResponse
 // @Failure      500     {string}  string "Error fetching question set links"
 // @Router       /question-sets/{id}/questions [get]
-func GetQuestionsFromSet(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) GetQuestionsFromSet(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
 
-	db := getDB()
+	db := h.repository.DB()
 
 	query := r.URL.Query()
 	returnIDs := query.Get("fields") == "id"
@@ -180,7 +163,7 @@ func GetQuestionsFromSet(w http.ResponseWriter, r *http.Request) {
 // @Failure      400       {string}  string "Invalid param (e.g., malformed userId or isPrivate)"
 // @Failure      500       {string}  string "Error fetching lists"
 // @Router       /question-sets [get]
-func GetLists(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) GetLists(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query()
 
 	page, _ := strconv.Atoi(query.Get("page"))
@@ -204,7 +187,7 @@ func GetLists(w http.ResponseWriter, r *http.Request) {
 		orderBy = "created_at desc"
 	}
 
-	db := getDB()
+	db := h.repository.DB()
 	if db == nil {
 		http.Error(w, "Database connection not established", http.StatusInternalServerError)
 		return

@@ -6,8 +6,15 @@ import (
 	"fmt"
 	"net/http"
 
-	"gorm.io/gorm"
 )
+
+type Handler struct {
+	repository *Repository
+}
+
+func NewHandler(repository *Repository) *Handler {
+	return &Handler{repository: repository}
+}
 
 // CreateSource godoc
 // @Summary Create a new source and exam instance (WIP)
@@ -20,13 +27,7 @@ import (
 // @Failure 400 {string} string "Invalid request body or missing required fields (name and year are mandatory)"
 // @Failure 500 {string} string "Internal server error or database transaction failure"
 // @Router /sources [post]
-func CreateSource(w http.ResponseWriter, r *http.Request) {
-	db := getDB()
-	if db == nil {
-		http.Error(w, "Database connection error", http.StatusInternalServerError)
-		return
-	}
-
+func (h *Handler) CreateSource(w http.ResponseWriter, r *http.Request) {
 	var body models.SourceExamBody
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
@@ -38,32 +39,7 @@ func CreateSource(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	source := models.Source{
-		Name: body.Name,
-		Type: body.Type,
-	}
-
-	var generatedID uint
-
-	err := db.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Create(&source).Error; err != nil {
-			return err
-		}
-
-		examInstance := models.ExamInstance{
-			SourceId: source.ID,
-			Edition:  body.Edition,
-			Phase:    body.Phase,
-			Year:     body.Year,
-		}
-
-		if err := tx.Create(&examInstance).Error; err != nil {
-			return err
-		}
-
-		generatedID = source.ID
-		return nil
-	})
+	generatedID, err := h.repository.CreateSource(body)
 
 	if err != nil {
 		fmt.Printf("Error creating source/instance: %v\n", err)

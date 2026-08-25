@@ -1,14 +1,40 @@
 package questionset
 
 import (
-	database "flashquest/internal/platform/database"
 	"flashquest/pkg/models"
 
 	"gorm.io/gorm"
 )
 
-func getDB() *gorm.DB {
-	return database.GetDB()
+type Repository struct {
+	db *gorm.DB
+}
+
+func NewRepository(db *gorm.DB) *Repository {
+	return &Repository{db: db}
+}
+
+func (r *Repository) DB() *gorm.DB {
+	return r.db
+}
+
+func (r *Repository) CreateQuestionSet(questionSet *models.QuestionSet, questionIDs []int) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Create(questionSet).Error; err != nil {
+			return err
+		}
+		for index, questionID := range questionIDs {
+			link := models.QuestionSetQuestion{
+				QuestionSetID: questionSet.ID,
+				QuestionID:    questionID,
+				Position:      index + 1,
+			}
+			if err := tx.Create(&link).Error; err != nil {
+				return err
+			}
+		}
+		return nil
+	})
 }
 
 func createQuestionSets(db *gorm.DB, qs []*models.QuestionSet) error {

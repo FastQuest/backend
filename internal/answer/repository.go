@@ -6,18 +6,26 @@ import (
 	"gorm.io/gorm"
 )
 
-func createAnswers(db *gorm.DB, answers *[]models.Answer) (int64, error) {
-	result := db.Create(answers)
+type Repository struct {
+	db *gorm.DB
+}
+
+func NewRepository(db *gorm.DB) *Repository {
+	return &Repository{db: db}
+}
+
+func (r *Repository) createAnswers(answers *[]models.Answer) (int64, error) {
+	result := r.db.Create(answers)
 	if result.Error != nil {
 		return 0, result.Error
 	}
 	return result.RowsAffected, nil
 }
 
-func GetUserPerfomace(db *gorm.DB, userID int) ([]SubjectPerformance, error) {
+func (r *Repository) GetUserPerfomace(userID int) ([]SubjectPerformance, error) {
 	var performances []SubjectPerformance
 
-	err := db.Table("submission s").
+	err := r.db.Table("submission s").
 		Select(`
             sub.*,
             COUNT(a.id) AS total_answers,
@@ -40,10 +48,10 @@ func GetUserPerfomace(db *gorm.DB, userID int) ([]SubjectPerformance, error) {
 	return performances, nil
 }
 
-func GetUserGeralPerfomace(db *gorm.DB, userID int) (OverallPerformance, error) {
+func (r *Repository) GetUserGeralPerfomace(userID int) (OverallPerformance, error) {
 	var performance OverallPerformance
 
-	err := db.Table("submission s").
+	err := r.db.Table("submission s").
 		Select(`
 		COUNT(a.id) AS total_answers,
 		SUM(CASE WHEN a.is_correct THEN 1 ELSE 0 END) AS total_correct,

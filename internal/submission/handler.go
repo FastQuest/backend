@@ -11,6 +11,14 @@ import (
 	"github.com/gorilla/mux"
 )
 
+type Handler struct {
+	repository *Repository
+}
+
+func NewHandler(repository *Repository) *Handler {
+	return &Handler{repository: repository}
+}
+
 // CreateSubmission godoc
 // @Summary Create a new submission
 // @Description Creates a new submission with user answers for a question set
@@ -23,7 +31,7 @@ import (
 // @Failure 500 {string} string "Internal server error"
 // @Security BearerAuth
 // @Router /submissions [post]
-func CreateSubmission(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) CreateSubmission(w http.ResponseWriter, r *http.Request) {
 	var req CreateSubmissionRequest
 
 	err := json.NewDecoder(r.Body).Decode(&req)
@@ -40,7 +48,7 @@ func CreateSubmission(w http.ResponseWriter, r *http.Request) {
 	}
 	req.UserID = userIDValue.(uint)
 
-	submission, err := CreateSubmissionPayload(req)
+	submission, err := h.repository.CreateSubmissionPayload(req)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Error creating submission: %v", err), http.StatusInternalServerError)
 		return
@@ -64,7 +72,7 @@ func CreateSubmission(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {string} string "Internal server error"
 // @Security BearerAuth
 // @Router /submissions [get]
-func GetUserSubmissions(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) GetUserSubmissions(w http.ResponseWriter, r *http.Request) {
 	userIDValue := r.Context().Value(auth.ContextKeyUserID)
 	if userIDValue == nil {
 		http.Error(w, "User ID not found", http.StatusUnauthorized)
@@ -100,7 +108,7 @@ func GetUserSubmissions(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	db := getDB()
+	db := h.repository.DB()
 	submissions, total, err := getSubmissionsByUserID(db, userID, questionSetID, page, pageSize)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Error fetching submissions: %v", err), http.StatusInternalServerError)
@@ -135,7 +143,7 @@ func GetUserSubmissions(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {string} string "Internal server error"
 // @Security BearerAuth
 // @Router /submissions/{id} [get]
-func GetSubmission(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) GetSubmission(w http.ResponseWriter, r *http.Request) {
 	userIDValue := r.Context().Value(auth.ContextKeyUserID)
 	if userIDValue == nil {
 		http.Error(w, "User ID not found", http.StatusUnauthorized)
@@ -157,7 +165,7 @@ func GetSubmission(w http.ResponseWriter, r *http.Request) {
 
 	includes := r.URL.Query().Get("include")
 
-	db := getDB()
+	db := h.repository.DB()
 	submission, err := getSubmissionByID(db, uint(id), includes)
 	if err != nil {
 		http.Error(w, "Submission not found", http.StatusNotFound)

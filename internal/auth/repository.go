@@ -4,7 +4,6 @@ import (
 	"errors"
 	"time"
 
-	database "flashquest/internal/platform/database"
 	"flashquest/pkg/models"
 
 	"github.com/jackc/pgx/v5/pgconn"
@@ -20,10 +19,6 @@ type Repository interface {
 
 type GormRepository struct {
 	db *gorm.DB
-}
-
-func NewRepository() *GormRepository {
-	return &GormRepository{db: database.GetDB()}
 }
 
 func NewRepositoryWithDB(db *gorm.DB) *GormRepository {
