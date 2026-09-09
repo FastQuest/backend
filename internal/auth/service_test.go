@@ -10,7 +10,6 @@ import (
 	"testing"
 	"time"
 
-	"flashquest/pkg/models"
 	jwtsec "flashquest/pkg/security/jwt"
 	"flashquest/pkg/security/password"
 	tokensec "flashquest/pkg/security/token"
@@ -41,10 +40,10 @@ func TestResolveRoleByEmailDomain(t *testing.T) {
 func TestRegisterCreatesUserRoleAndTokens(t *testing.T) {
 	privateKeyPEM, publicKeyPEM := generateTestKeyPair(t)
 	repo := &stubRepository{
-		findUserByEmailFn: func(_ string) (*models.User, error) {
+		findUserByEmailFn: func(_ string) (*User, error) {
 			return nil, ErrUserNotFound
 		},
-		createUserWithRoleFn: func(user *models.User, roleName string) error {
+		createUserWithRoleFn: func(user *User, roleName string) error {
 			user.ID = 123
 			if roleName != "Aluno" {
 				t.Fatalf("expected role Aluno, got %q", roleName)
@@ -99,7 +98,7 @@ func TestRegisterCreatesUserRoleAndTokens(t *testing.T) {
 	if !tokensec.VerifyHash(got.RefreshToken, repo.savedRefreshTokenHash) {
 		t.Fatal("expected persisted refresh hash to match returned refresh token")
 	}
-	if repo.savedRefreshExpiresAt.Before(time.Now().Add(71 * time.Hour)) || repo.savedRefreshExpiresAt.After(time.Now().Add(73*time.Hour)) {
+	if repo.savedRefreshExpiresAt.Before(time.Now().Add(71*time.Hour)) || repo.savedRefreshExpiresAt.After(time.Now().Add(73*time.Hour)) {
 		t.Fatalf("expected refresh expiration around 72h, got %s", repo.savedRefreshExpiresAt.Sub(time.Now()))
 	}
 
@@ -117,8 +116,8 @@ func TestRegisterCreatesUserRoleAndTokens(t *testing.T) {
 
 func TestRegisterReturnsDuplicatedEmail(t *testing.T) {
 	service := NewService(&stubRepository{
-		findUserByEmailFn: func(_ string) (*models.User, error) {
-			return &models.User{ID: 1}, nil
+		findUserByEmailFn: func(_ string) (*User, error) {
+			return &User{ID: 1}, nil
 		},
 	}, "key")
 
@@ -153,11 +152,11 @@ func TestLoginIssuesTokensAndPersistsRefreshHash(t *testing.T) {
 	}
 
 	repo := &stubRepository{
-		findUserByEmailFn: func(email string) (*models.User, error) {
+		findUserByEmailFn: func(email string) (*User, error) {
 			if email != "prof@ceub.edu.br" {
 				t.Fatalf("expected normalized email prof@ceub.edu.br, got %q", email)
 			}
-			return &models.User{ID: 321, Email: email, PasswordHash: passwordHash}, nil
+			return &User{ID: 321, Email: email, PasswordHash: passwordHash}, nil
 		},
 		getUserRoleFn: func(userID uint) (string, error) {
 			if userID != 321 {
@@ -203,7 +202,7 @@ func TestLoginIssuesTokensAndPersistsRefreshHash(t *testing.T) {
 
 func TestLoginReturnsInvalidCredentials(t *testing.T) {
 	service := NewService(&stubRepository{
-		findUserByEmailFn: func(_ string) (*models.User, error) {
+		findUserByEmailFn: func(_ string) (*User, error) {
 			return nil, ErrUserNotFound
 		},
 	}, "key")
@@ -218,24 +217,24 @@ func TestLoginReturnsInvalidCredentials(t *testing.T) {
 }
 
 type stubRepository struct {
-	findUserByEmailFn  func(email string) (*models.User, error)
-	createUserWithRoleFn func(user *models.User, roleName string) error
-	saveRefreshTokenFn func(userID uint, tokenHash string, expiresAt time.Time) error
-	getUserRoleFn      func(userID uint) (string, error)
+	findUserByEmailFn    func(email string) (*User, error)
+	createUserWithRoleFn func(user *User, roleName string) error
+	saveRefreshTokenFn   func(userID uint, tokenHash string, expiresAt time.Time) error
+	getUserRoleFn        func(userID uint) (string, error)
 
-	savedRefreshUserID   uint
+	savedRefreshUserID    uint
 	savedRefreshTokenHash string
 	savedRefreshExpiresAt time.Time
 }
 
-func (s *stubRepository) FindUserByEmail(email string) (*models.User, error) {
+func (s *stubRepository) FindUserByEmail(email string) (*User, error) {
 	if s.findUserByEmailFn == nil {
 		return nil, ErrUserNotFound
 	}
 	return s.findUserByEmailFn(email)
 }
 
-func (s *stubRepository) CreateUserWithRole(user *models.User, roleName string) error {
+func (s *stubRepository) CreateUserWithRole(user *User, roleName string) error {
 	if s.createUserWithRoleFn == nil {
 		return nil
 	}
@@ -398,7 +397,7 @@ func TestLoginValidatePassword(t *testing.T) {
 func TestLoginUserEnumeration(t *testing.T) {
 	privateKeyPEM, _ := generateTestKeyPair(t)
 	repo := &stubRepository{
-		findUserByEmailFn: func(_ string) (*models.User, error) {
+		findUserByEmailFn: func(_ string) (*User, error) {
 			return nil, ErrUserNotFound
 		},
 	}

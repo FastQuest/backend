@@ -4,15 +4,13 @@ import (
 	"errors"
 	"time"
 
-	"flashquest/pkg/models"
-
 	"github.com/jackc/pgx/v5/pgconn"
 	"gorm.io/gorm"
 )
 
 type Repository interface {
-	FindUserByEmail(email string) (*models.User, error)
-	CreateUserWithRole(user *models.User, roleName string) error
+	FindUserByEmail(email string) (*User, error)
+	CreateUserWithRole(user *User, roleName string) error
 	SaveRefreshToken(userID uint, tokenHash string, expiresAt time.Time) error
 	GetUserRole(userID uint) (string, error)
 }
@@ -25,8 +23,8 @@ func NewRepositoryWithDB(db *gorm.DB) *GormRepository {
 	return &GormRepository{db: db}
 }
 
-func (r *GormRepository) FindUserByEmail(email string) (*models.User, error) {
-	var user models.User
+func (r *GormRepository) FindUserByEmail(email string) (*User, error) {
+	var user User
 	if err := r.db.Where("email = ?", email).First(&user).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, ErrUserNotFound
@@ -36,7 +34,7 @@ func (r *GormRepository) FindUserByEmail(email string) (*models.User, error) {
 	return &user, nil
 }
 
-func (r *GormRepository) CreateUserWithRole(user *models.User, roleName string) error {
+func (r *GormRepository) CreateUserWithRole(user *User, roleName string) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
 		if err := tx.Create(user).Error; err != nil {
 			if isDuplicateKeyError(err) {
@@ -45,12 +43,12 @@ func (r *GormRepository) CreateUserWithRole(user *models.User, roleName string) 
 			return err
 		}
 
-		var role models.Role
+		var role Role
 		if err := tx.Where("name = ?", roleName).First(&role).Error; err != nil {
 			return err
 		}
 
-		userRole := models.UserRole{
+		userRole := UserRole{
 			UserID: user.ID,
 			RoleID: role.ID,
 		}
@@ -63,7 +61,7 @@ func (r *GormRepository) CreateUserWithRole(user *models.User, roleName string) 
 }
 
 func (r *GormRepository) SaveRefreshToken(userID uint, tokenHash string, expiresAt time.Time) error {
-	refreshToken := models.RefreshToken{
+	refreshToken := RefreshToken{
 		UserID:    userID,
 		TokenHash: tokenHash,
 		ExpiresAt: expiresAt,

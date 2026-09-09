@@ -6,7 +6,6 @@ import (
 	"strings"
 	"time"
 
-	"flashquest/pkg/models"
 	jwtsec "flashquest/pkg/security/jwt"
 	"flashquest/pkg/security/password"
 	tokensec "flashquest/pkg/security/token"
@@ -61,7 +60,7 @@ func (s *Service) Register(req RegisterRequest) (AuthResponse, error) {
 		return AuthResponse{}, err
 	}
 
-	user := &models.User{
+	user := &User{
 		Name:         req.Name,
 		Email:        normalizedEmail,
 		PasswordHash: passwordHash,
