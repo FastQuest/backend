@@ -1,8 +1,6 @@
 package answer
 
 import (
-	"flashquest/pkg/models"
-
 	"gorm.io/gorm"
 )
 
@@ -14,7 +12,7 @@ func NewRepository(db *gorm.DB) *Repository {
 	return &Repository{db: db}
 }
 
-func (r *Repository) createAnswers(answers *[]models.Answer) (int64, error) {
+func (r *Repository) createAnswers(answers *[]Answer) (int64, error) {
 	result := r.db.Create(answers)
 	if result.Error != nil {
 		return 0, result.Error

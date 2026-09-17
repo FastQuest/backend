@@ -1,7 +1,6 @@
 package answer
 
 import (
-	"flashquest/pkg/models"
 	"fmt"
 )
 
@@ -28,9 +27,9 @@ func (s *Service) SendAnswers(a *[]CreateAnswerRequest) error {
 		}
 	}
 
-	answers := make([]models.Answer, len(*a))
+	answers := make([]Answer, len(*a))
 	for i, ans := range *a {
-		answers[i] = models.Answer{
+		answers[i] = Answer{
 			QuestionOptionID: ans.QuestionOptionID,
 			QuestionID:       ans.QuestionID,
 			SubmissionID:     ans.SubmissionID,
