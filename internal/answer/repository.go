@@ -1,27 +1,46 @@
 package answer
 
 import (
+	"errors"
+
 	"gorm.io/gorm"
 )
 
-type Repository struct {
+// subjectPerformanceRow and overallPerformanceRow are the raw shapes the
+// aggregate queries scan into. They stay unexported so no gorm tagged struct
+// leaks out of this layer.
+type subjectPerformanceRow struct {
+	Subject           Subject `gorm:"embedded"`
+	TotalAnswers      int     `gorm:"column:total_answers"`
+	TotalCorrect      int     `gorm:"column:total_correct"`
+	PercentualCorrect float64 `gorm:"column:percentual_correct"`
+}
+
+type overallPerformanceRow struct {
+	TotalAnswers      int     `gorm:"column:total_answers"`
+	TotalCorrect      int     `gorm:"column:total_correct"`
+	PercentualCorrect float64 `gorm:"column:percentual_correct"`
+}
+
+type gormRepository struct {
 	db *gorm.DB
 }
 
-func NewRepository(db *gorm.DB) *Repository {
-	return &Repository{db: db}
+// NewRepository builds the GORM backed implementation of Repository.
+func NewRepository(db *gorm.DB) Repository {
+	return &gormRepository{db: db}
 }
 
-func (r *Repository) createAnswers(answers *[]Answer) (int64, error) {
-	result := r.db.Create(answers)
+func (r *gormRepository) CreateAnswers(answers []Answer) (int64, error) {
+	result := r.db.Create(&answers)
 	if result.Error != nil {
-		return 0, result.Error
+		return 0, translateError(result.Error)
 	}
 	return result.RowsAffected, nil
 }
 
-func (r *Repository) GetUserPerfomace(userID int) ([]SubjectPerformance, error) {
-	var performances []SubjectPerformance
+func (r *gormRepository) GetUserPerfomace(userID int) ([]SubjectPerformance, error) {
+	var rows []subjectPerformanceRow
 
 	err := r.db.Table("submission s").
 		Select(`
@@ -37,17 +56,30 @@ func (r *Repository) GetUserPerfomace(userID int) ([]SubjectPerformance, error) 
 		Where("s.deleted_at IS NULL AND a.deleted_at IS NULL").
 		Group("sub.id"). // Agrupamos pela Primary Key do subject
 		Order("percentual_correct ASC").
-		Scan(&performances).Error
+		Scan(&rows).Error
 
 	if err != nil {
-		return nil, err
+		return nil, translateError(err)
+	}
+
+	// Kept as a nil slice when there are no rows so the endpoint still
+	// serializes to null, exactly as before the refactor.
+	var performances []SubjectPerformance
+	for _, row := range rows {
+		performances = append(performances, SubjectPerformance{
+			SubjectID:         row.Subject.ID,
+			SubjectName:       row.Subject.Name,
+			TotalAnswers:      row.TotalAnswers,
+			TotalCorrect:      row.TotalCorrect,
+			PercentualCorrect: row.PercentualCorrect,
+		})
 	}
 
 	return performances, nil
 }
 
-func (r *Repository) GetUserGeralPerfomace(userID int) (OverallPerformance, error) {
-	var performance OverallPerformance
+func (r *gormRepository) GetUserGeralPerfomace(userID int) (OverallPerformance, error) {
+	var row overallPerformanceRow
 
 	err := r.db.Table("submission s").
 		Select(`
@@ -58,11 +90,23 @@ func (r *Repository) GetUserGeralPerfomace(userID int) (OverallPerformance, erro
 		Joins("JOIN answer a ON a.submission_id = s.id").
 		Where("s.user_id = ?", userID).
 		Where("s.deleted_at IS NULL AND a.deleted_at IS NULL").
-		Scan(&performance).Error
+		Scan(&row).Error
 
 	if err != nil {
-		return OverallPerformance{}, err
+		return OverallPerformance{}, translateError(err)
 	}
 
-	return performance, nil
+	return OverallPerformance{
+		TotalAnswers:      row.TotalAnswers,
+		TotalCorrect:      row.TotalCorrect,
+		PercentualCorrect: row.PercentualCorrect,
+	}, nil
+}
+
+// translateError keeps gorm sentinels from escaping the repository.
+func translateError(err error) error {
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return ErrNotFound
+	}
+	return err
 }

@@ -97,7 +97,7 @@ func registerPaths(r *mux.Router, db *gorm.DB) {
 	protectedRouter.HandleFunc("/submissions", submissionHandler.GetUserSubmissions).Methods("GET")
 	protectedRouter.HandleFunc("/submissions/{id}", submissionHandler.GetSubmission).Methods("GET")
 	user.RegisterRoutes(protectedRouter, db)
-	answerHandler := answer.NewHandler(answer.NewRepository(db))
+	answerHandler := answer.NewHandler(answer.NewService(answer.NewRepository(db)))
 	protectedRouter.HandleFunc("/answers/performance", answerHandler.GetSubjectPerfomanceHandler).Methods("GET")
 	protectedRouter.HandleFunc("/answers/overall-performance", answerHandler.GetUserOverallPerfomanceHandler).Methods("GET")
 }

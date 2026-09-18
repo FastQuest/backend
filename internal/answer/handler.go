@@ -2,16 +2,19 @@ package answer
 
 import (
 	"encoding/json"
-	"flashquest/internal/auth"
 	"net/http"
+
+	"flashquest/internal/auth"
 )
 
+// Handler is the HTTP layer of the answer domain. It depends only on the
+// Service interface, never on the database.
 type Handler struct {
-	repository *Repository
+	service Service
 }
 
-func NewHandler(repository *Repository) *Handler {
-	return &Handler{repository: repository}
+func NewHandler(service Service) *Handler {
+	return &Handler{service: service}
 }
 
 // GetSubjectPerfomance godoc
@@ -26,21 +29,12 @@ func NewHandler(repository *Repository) *Handler {
 // @Security BearerAuth
 // @Router /answers/performance [get]
 func (h *Handler) GetSubjectPerfomanceHandler(w http.ResponseWriter, r *http.Request) {
-	userIDValue := r.Context().Value(auth.ContextKeyUserID)
-	if userIDValue == nil {
-		http.Error(w, "User ID not found", http.StatusUnauthorized)
-		return
-	}
-
-	userIDUint, ok := userIDValue.(uint)
+	userID, ok := userIDFromContext(w, r)
 	if !ok {
-		http.Error(w, "Invalid User ID format in context", http.StatusInternalServerError)
 		return
 	}
 
-	userID := int(userIDUint)
-
-	subjectPerformance, err := h.repository.GetUserPerfomace(userID)
+	subjectPerformance, err := h.service.GetSubjectPerformance(userID)
 	if err != nil {
 		http.Error(w, "Error fetching subject performance", http.StatusInternalServerError)
 		return
@@ -64,21 +58,12 @@ func (h *Handler) GetSubjectPerfomanceHandler(w http.ResponseWriter, r *http.Req
 // @Security BearerAuth
 // @Router /answers/overall-performance [get]
 func (h *Handler) GetUserOverallPerfomanceHandler(w http.ResponseWriter, r *http.Request) {
-	userIDValue := r.Context().Value(auth.ContextKeyUserID)
-	if userIDValue == nil {
-		http.Error(w, "User ID not found", http.StatusUnauthorized)
-		return
-	}
-
-	userIDUint, ok := userIDValue.(uint)
+	userID, ok := userIDFromContext(w, r)
 	if !ok {
-		http.Error(w, "Invalid User ID format in context", http.StatusInternalServerError)
 		return
 	}
 
-	userID := int(userIDUint)
-
-	overallPerformance, err := h.repository.GetUserGeralPerfomace(userID)
+	overallPerformance, err := h.service.GetOverallPerformance(userID)
 	if err != nil {
 		http.Error(w, "Error fetching overall performance", http.StatusInternalServerError)
 		return
@@ -88,4 +73,22 @@ func (h *Handler) GetUserOverallPerfomanceHandler(w http.ResponseWriter, r *http
 	if err := json.NewEncoder(w).Encode(overallPerformance); err != nil {
 		http.Error(w, "Error encoding response", http.StatusInternalServerError)
 	}
+}
+
+// userIDFromContext reads the authenticated user id, writing the response
+// itself when it is missing or malformed.
+func userIDFromContext(w http.ResponseWriter, r *http.Request) (int, bool) {
+	userIDValue := r.Context().Value(auth.ContextKeyUserID)
+	if userIDValue == nil {
+		http.Error(w, "User ID not found", http.StatusUnauthorized)
+		return 0, false
+	}
+
+	userIDUint, ok := userIDValue.(uint)
+	if !ok {
+		http.Error(w, "Invalid User ID format in context", http.StatusInternalServerError)
+		return 0, false
+	}
+
+	return int(userIDUint), true
 }
