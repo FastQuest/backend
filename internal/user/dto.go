@@ -1,4 +1,4 @@
-package dto
+package user
 
 // Response is the public representation of a user. Sensitive fields such as
 // the password hash are never exposed here.

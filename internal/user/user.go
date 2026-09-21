@@ -2,8 +2,6 @@ package user
 
 import (
 	"errors"
-
-	"flashquest/internal/user/dto"
 )
 
 type User struct {
@@ -31,5 +29,5 @@ type Repository interface {
 
 // Service describes the business contract of the user domain.
 type Service interface {
-	GetCurrentUser(userID uint) (dto.Response, error)
+	GetCurrentUser(userID uint) (Response, error)
 }
