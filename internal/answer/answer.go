@@ -2,8 +2,6 @@ package answer
 
 import (
 	"errors"
-
-	"flashquest/internal/answer/dto"
 )
 
 // ErrNotFound is the domain level translation of a missing record. The
@@ -39,7 +37,7 @@ type Repository interface {
 
 // Service describes the business contract of the answer domain.
 type Service interface {
-	SendAnswers(requests []dto.CreateAnswerRequest) error
-	GetSubjectPerformance(userID int) ([]dto.SubjectPerformanceResponse, error)
-	GetOverallPerformance(userID int) (dto.OverallPerformanceResponse, error)
+	SendAnswers(requests []CreateAnswerRequest) error
+	GetSubjectPerformance(userID int) ([]SubjectPerformanceResponse, error)
+	GetOverallPerformance(userID int) (OverallPerformanceResponse, error)
 }

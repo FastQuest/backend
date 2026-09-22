@@ -3,7 +3,6 @@ package submission
 import (
 	"errors"
 	"flashquest/internal/answer"
-	answerdto "flashquest/internal/answer/dto"
 	"flashquest/internal/questionoption"
 	"flashquest/pkg/models"
 )
@@ -40,9 +39,9 @@ func (r *Repository) CreateSubmissionPayload(req CreateSubmissionRequest) (model
 		return models.Submission{}, err
 	}
 
-	answers := make([]answerdto.CreateAnswerRequest, len(req.Answers))
+	answers := make([]answer.CreateAnswerRequest, len(req.Answers))
 	for i, a := range req.Answers {
-		answers[i] = answerdto.CreateAnswerRequest{
+		answers[i] = answer.CreateAnswerRequest{
 			SubmissionID:     createdSubmission.ID,
 			QuestionOptionID: a.OptionID,
 			QuestionID:       a.QuestionID,

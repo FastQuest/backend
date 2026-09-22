@@ -1,4 +1,4 @@
-package dto
+package answer
 
 type CreateAnswerRequest struct {
 	SubmissionID     uint `json:"submission_id"`

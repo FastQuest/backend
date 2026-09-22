@@ -2,8 +2,6 @@ package answer
 
 import (
 	"fmt"
-
-	"flashquest/internal/answer/dto"
 )
 
 type service struct {
@@ -15,7 +13,7 @@ func NewService(repository Repository) Service {
 	return &service{repository: repository}
 }
 
-func (s *service) SendAnswers(requests []dto.CreateAnswerRequest) error {
+func (s *service) SendAnswers(requests []CreateAnswerRequest) error {
 	for i, req := range requests {
 		if req.QuestionOptionID == 0 {
 			return fmt.Errorf("questionOptionID at index %d cannot be zero", i)
@@ -47,13 +45,13 @@ func (s *service) SendAnswers(requests []dto.CreateAnswerRequest) error {
 	return nil
 }
 
-func (s *service) GetSubjectPerformance(userID int) ([]dto.SubjectPerformanceResponse, error) {
+func (s *service) GetSubjectPerformance(userID int) ([]SubjectPerformanceResponse, error) {
 	performances, err := s.repository.GetUserPerfomace(userID)
 	if err != nil {
 		return nil, err
 	}
 
-	var responses []dto.SubjectPerformanceResponse
+	var responses []SubjectPerformanceResponse
 	for _, performance := range performances {
 		responses = append(responses, toSubjectPerformanceResponse(performance))
 	}
@@ -61,22 +59,22 @@ func (s *service) GetSubjectPerformance(userID int) ([]dto.SubjectPerformanceRes
 	return responses, nil
 }
 
-func (s *service) GetOverallPerformance(userID int) (dto.OverallPerformanceResponse, error) {
+func (s *service) GetOverallPerformance(userID int) (OverallPerformanceResponse, error) {
 	performance, err := s.repository.GetUserGeralPerfomace(userID)
 	if err != nil {
-		return dto.OverallPerformanceResponse{}, err
+		return OverallPerformanceResponse{}, err
 	}
 
-	return dto.OverallPerformanceResponse{
+	return OverallPerformanceResponse{
 		TotalAnswers:      performance.TotalAnswers,
 		TotalCorrect:      performance.TotalCorrect,
 		PercentualCorrect: performance.PercentualCorrect,
 	}, nil
 }
 
-func toSubjectPerformanceResponse(performance SubjectPerformance) dto.SubjectPerformanceResponse {
-	return dto.SubjectPerformanceResponse{
-		Subject: dto.SubjectResponse{
+func toSubjectPerformanceResponse(performance SubjectPerformance) SubjectPerformanceResponse {
+	return SubjectPerformanceResponse{
+		Subject: SubjectResponse{
 			ID:   performance.SubjectID,
 			Name: performance.SubjectName,
 		},

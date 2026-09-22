@@ -6,7 +6,6 @@ import (
 	"strings"
 	"testing"
 
-	"flashquest/internal/answer/dto"
 	"gorm.io/gorm"
 )
 
@@ -44,7 +43,7 @@ func TestSendAnswersMapsRequestsToEntities(t *testing.T) {
 	repo := &stubRepository{}
 	svc := NewService(repo)
 
-	err := svc.SendAnswers([]dto.CreateAnswerRequest{
+	err := svc.SendAnswers([]CreateAnswerRequest{
 		{SubmissionID: 7, QuestionID: 8, QuestionOptionID: 9, IsCorrect: true},
 		{SubmissionID: 7, QuestionID: 10, QuestionOptionID: 11, IsCorrect: false},
 	})
@@ -64,18 +63,18 @@ func TestSendAnswersMapsRequestsToEntities(t *testing.T) {
 func TestSendAnswersRejectsZeroedIDs(t *testing.T) {
 	cases := []struct {
 		name    string
-		request dto.CreateAnswerRequest
+		request CreateAnswerRequest
 		want    string
 	}{
-		{"missing option", dto.CreateAnswerRequest{SubmissionID: 1, QuestionID: 1}, "questionOptionID at index 0"},
-		{"missing question", dto.CreateAnswerRequest{SubmissionID: 1, QuestionOptionID: 1}, "questionID at index 0"},
-		{"missing submission", dto.CreateAnswerRequest{QuestionID: 1, QuestionOptionID: 1}, "submissionID at index 0"},
+		{"missing option", CreateAnswerRequest{SubmissionID: 1, QuestionID: 1}, "questionOptionID at index 0"},
+		{"missing question", CreateAnswerRequest{SubmissionID: 1, QuestionOptionID: 1}, "questionID at index 0"},
+		{"missing submission", CreateAnswerRequest{QuestionID: 1, QuestionOptionID: 1}, "submissionID at index 0"},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			repo := &stubRepository{}
-			err := NewService(repo).SendAnswers([]dto.CreateAnswerRequest{tc.request})
+			err := NewService(repo).SendAnswers([]CreateAnswerRequest{tc.request})
 			if err == nil || !strings.Contains(err.Error(), tc.want) {
 				t.Fatalf("expected error containing %q, got %v", tc.want, err)
 			}
@@ -92,7 +91,7 @@ func TestSendAnswersWrapsRepositoryError(t *testing.T) {
 		createAnswersFn: func([]Answer) (int64, error) { return 0, repoErr },
 	})
 
-	err := svc.SendAnswers([]dto.CreateAnswerRequest{
+	err := svc.SendAnswers([]CreateAnswerRequest{
 		{SubmissionID: 1, QuestionID: 1, QuestionOptionID: 1},
 	})
 	if !errors.Is(err, repoErr) {
@@ -117,9 +116,9 @@ func TestGetSubjectPerformanceMapsToDTO(t *testing.T) {
 		t.Fatalf("expected no error, got %v", err)
 	}
 
-	want := []dto.SubjectPerformanceResponse{
+	want := []SubjectPerformanceResponse{
 		{
-			Subject:           dto.SubjectResponse{ID: 3, Name: "Direito Civil"},
+			Subject:           SubjectResponse{ID: 3, Name: "Direito Civil"},
 			TotalAnswers:      10,
 			TotalCorrect:      7,
 			PercentualCorrect: 70,
@@ -158,7 +157,7 @@ func TestGetOverallPerformanceMapsToDTO(t *testing.T) {
 		t.Fatalf("expected no error, got %v", err)
 	}
 
-	want := dto.OverallPerformanceResponse{TotalAnswers: 20, TotalCorrect: 5, PercentualCorrect: 25}
+	want := OverallPerformanceResponse{TotalAnswers: 20, TotalCorrect: 5, PercentualCorrect: 25}
 	if got != want {
 		t.Fatalf("expected %+v, got %+v", want, got)
 	}
