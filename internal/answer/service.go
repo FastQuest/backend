@@ -1,46 +1,87 @@
 package answer
 
 import (
-	"flashquest/pkg/models"
 	"fmt"
+
+	"flashquest/internal/answer/dto"
 )
 
-type Service struct {
-	repository *Repository
+type service struct {
+	repository Repository
 }
 
-func NewService(repository *Repository) *Service {
-	return &Service{repository: repository}
+// NewService builds the default implementation of Service.
+func NewService(repository Repository) Service {
+	return &service{repository: repository}
 }
 
-func (s *Service) SendAnswers(a *[]CreateAnswerRequest) error {
-	for i, ans := range *a {
-		if ans.QuestionOptionID == 0 {
+func (s *service) SendAnswers(requests []dto.CreateAnswerRequest) error {
+	for i, req := range requests {
+		if req.QuestionOptionID == 0 {
 			return fmt.Errorf("questionOptionID at index %d cannot be zero", i)
 		}
 
-		if ans.QuestionID == 0 {
+		if req.QuestionID == 0 {
 			return fmt.Errorf("questionID at index %d cannot be zero", i)
 		}
 
-		if ans.SubmissionID == 0 {
+		if req.SubmissionID == 0 {
 			return fmt.Errorf("submissionID at index %d cannot be zero", i)
 		}
 	}
 
-	answers := make([]models.Answer, len(*a))
-	for i, ans := range *a {
-		answers[i] = models.Answer{
-			QuestionOptionID: ans.QuestionOptionID,
-			QuestionID:       ans.QuestionID,
-			SubmissionID:     ans.SubmissionID,
-			IsCorrect:        ans.IsCorrect,
+	answers := make([]Answer, len(requests))
+	for i, req := range requests {
+		answers[i] = Answer{
+			QuestionOptionID: req.QuestionOptionID,
+			QuestionID:       req.QuestionID,
+			SubmissionID:     req.SubmissionID,
+			IsCorrect:        req.IsCorrect,
 		}
 	}
 
-	if _, err := s.repository.createAnswers(&answers); err != nil {
+	if _, err := s.repository.CreateAnswers(answers); err != nil {
 		return fmt.Errorf("failed to create answer: %w", err)
 	}
 
 	return nil
+}
+
+func (s *service) GetSubjectPerformance(userID int) ([]dto.SubjectPerformanceResponse, error) {
+	performances, err := s.repository.GetUserPerfomace(userID)
+	if err != nil {
+		return nil, err
+	}
+
+	var responses []dto.SubjectPerformanceResponse
+	for _, performance := range performances {
+		responses = append(responses, toSubjectPerformanceResponse(performance))
+	}
+
+	return responses, nil
+}
+
+func (s *service) GetOverallPerformance(userID int) (dto.OverallPerformanceResponse, error) {
+	performance, err := s.repository.GetUserGeralPerfomace(userID)
+	if err != nil {
+		return dto.OverallPerformanceResponse{}, err
+	}
+
+	return dto.OverallPerformanceResponse{
+		TotalAnswers:      performance.TotalAnswers,
+		TotalCorrect:      performance.TotalCorrect,
+		PercentualCorrect: performance.PercentualCorrect,
+	}, nil
+}
+
+func toSubjectPerformanceResponse(performance SubjectPerformance) dto.SubjectPerformanceResponse {
+	return dto.SubjectPerformanceResponse{
+		Subject: dto.SubjectResponse{
+			ID:   performance.SubjectID,
+			Name: performance.SubjectName,
+		},
+		TotalAnswers:      performance.TotalAnswers,
+		TotalCorrect:      performance.TotalCorrect,
+		PercentualCorrect: performance.PercentualCorrect,
+	}
 }

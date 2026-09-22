@@ -7,12 +7,14 @@ import (
 	"net/http"
 )
 
+// Handler is the HTTP layer of the answer domain. It depends only on the
+// Service interface, never on the database.
 type Handler struct {
-	repository *Repository
+	service Service
 }
 
-func NewHandler(repository *Repository) *Handler {
-	return &Handler{repository: repository}
+func NewHandler(service Service) *Handler {
+	return &Handler{service: service}
 }
 
 // GetSubjectPerfomance godoc
@@ -33,7 +35,7 @@ func (h *Handler) GetSubjectPerfomanceHandler(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	subjectPerformance, err := h.repository.GetUserPerfomace(int(userID))
+	subjectPerformance, err := h.service.GetSubjectPerformance(int(userID))
 	if err != nil {
 		apiresp.WriteError(w, http.StatusInternalServerError, "DATABASE_ERROR", "Error fetching subject performance")
 		return
@@ -63,7 +65,7 @@ func (h *Handler) GetUserOverallPerfomanceHandler(w http.ResponseWriter, r *http
 		return
 	}
 
-	overallPerformance, err := h.repository.GetUserGeralPerfomace(int(userID))
+	overallPerformance, err := h.service.GetOverallPerformance(int(userID))
 	if err != nil {
 		apiresp.WriteError(w, http.StatusInternalServerError, "DATABASE_ERROR", "Error fetching overall performance")
 		return
