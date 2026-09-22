@@ -4,6 +4,8 @@ import (
 	"errors"
 	"time"
 
+	"flashquest/internal/user"
+
 	"github.com/jackc/pgx/v5/pgconn"
 	"gorm.io/gorm"
 )
@@ -18,7 +20,7 @@ func NewRepositoryWithDB(db *gorm.DB) Repository {
 }
 
 func (r *gormRepository) FindCredentialsByEmail(email string) (*Credentials, error) {
-	var user User
+	var user user.User
 	if err := r.db.Where("email = ?", email).First(&user).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, ErrNotFound
@@ -29,7 +31,7 @@ func (r *gormRepository) FindCredentialsByEmail(email string) (*Credentials, err
 }
 
 func (r *gormRepository) CreateUserWithRole(credentials *Credentials, roleName string) error {
-	user := User{
+	user := user.User{
 		Name:         credentials.Name,
 		Email:        credentials.Email,
 		PasswordHash: credentials.PasswordHash,
@@ -100,7 +102,7 @@ func (r *gormRepository) GetUserRole(userID uint) (string, error) {
 	return role.Name, nil
 }
 
-func toCredentials(user User) *Credentials {
+func toCredentials(user user.User) *Credentials {
 	return &Credentials{
 		UserID:       user.ID,
 		Name:         user.Name,

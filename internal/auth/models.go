@@ -2,22 +2,6 @@ package auth
 
 import "time"
 
-// GORM persistence models owned by the auth domain. None of them carry json
-// tags: serialization belongs to the DTOs in internal/auth/dto.
-
-// User is the auth view of the users table, limited to the columns this
-// domain needs to authenticate someone.
-type User struct {
-	ID           uint   `gorm:"primaryKey"`
-	Name         string `gorm:"not null"`
-	Email        string `gorm:"not null"`
-	PasswordHash string `gorm:"not null"`
-}
-
-func (User) TableName() string {
-	return "users"
-}
-
 type Role struct {
 	ID   uint   `gorm:"primaryKey"`
 	Name string `gorm:"not null;unique"`

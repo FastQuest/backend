@@ -2,7 +2,8 @@ package submission
 
 import (
 	"encoding/json"
-	"flashquest/internal/auth"
+	"flashquest/internal/appcontext"
+	"flashquest/pkg/apiresp"
 	"fmt"
 	"math"
 	"net/http"
@@ -41,12 +42,12 @@ func (h *Handler) CreateSubmission(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userIDValue := r.Context().Value(auth.ContextKeyUserID)
-	if userIDValue == nil {
-		http.Error(w, "User ID not found", http.StatusUnauthorized)
+	userID, ok := appcontext.GetUserID(r.Context())
+	if !ok {
+		apiresp.WriteError(w, http.StatusUnauthorized, "UNAUTHORIZED", "User ID not found in context")
 		return
 	}
-	req.UserID = userIDValue.(uint)
+	req.UserID = userID
 
 	submission, err := h.repository.CreateSubmissionPayload(req)
 	if err != nil {
@@ -73,12 +74,11 @@ func (h *Handler) CreateSubmission(w http.ResponseWriter, r *http.Request) {
 // @Security BearerAuth
 // @Router /submissions [get]
 func (h *Handler) GetUserSubmissions(w http.ResponseWriter, r *http.Request) {
-	userIDValue := r.Context().Value(auth.ContextKeyUserID)
-	if userIDValue == nil {
-		http.Error(w, "User ID not found", http.StatusUnauthorized)
+	userID, ok := appcontext.GetUserID(r.Context())
+	if !ok {
+		apiresp.WriteError(w, http.StatusUnauthorized, "UNAUTHORIZED", "User ID not found in context")
 		return
 	}
-	userID := userIDValue.(uint)
 
 	// Parse query parameters
 	queryParams := r.URL.Query()
@@ -144,22 +144,21 @@ func (h *Handler) GetUserSubmissions(w http.ResponseWriter, r *http.Request) {
 // @Security BearerAuth
 // @Router /submissions/{id} [get]
 func (h *Handler) GetSubmission(w http.ResponseWriter, r *http.Request) {
-	userIDValue := r.Context().Value(auth.ContextKeyUserID)
-	if userIDValue == nil {
-		http.Error(w, "User ID not found", http.StatusUnauthorized)
+	userID, ok := appcontext.GetUserID(r.Context())
+	if !ok {
+		apiresp.WriteError(w, http.StatusUnauthorized, "UNAUTHORIZED", "User ID not found in context")
 		return
 	}
-	userID := userIDValue.(uint)
 
 	submissionID := mux.Vars(r)["id"]
 	if submissionID == "" {
-		http.Error(w, "ID parameter is required", http.StatusBadRequest)
+		apiresp.WriteError(w, http.StatusBadRequest, "BAD_REQUEST", "ID parameter is required")
 		return
 	}
 
 	id, err := strconv.ParseUint(submissionID, 10, 32)
 	if err != nil {
-		http.Error(w, "Invalid submission ID", http.StatusBadRequest)
+		apiresp.WriteError(w, http.StatusBadRequest, "BAD_REQUEST", "Invalid submission ID")
 		return
 	}
 
@@ -168,12 +167,12 @@ func (h *Handler) GetSubmission(w http.ResponseWriter, r *http.Request) {
 	db := h.repository.DB()
 	submission, err := getSubmissionByID(db, uint(id), includes)
 	if err != nil {
-		http.Error(w, "Submission not found", http.StatusNotFound)
+		apiresp.WriteError(w, http.StatusNotFound, "NOT_FOUND", "Submission not found")
 		return
 	}
 
 	if submission.UserID != userID {
-		http.Error(w, "Unauthorized", http.StatusForbidden)
+		apiresp.WriteError(w, http.StatusForbidden, "FORBIDDEN", "Unauthorized")
 		return
 	}
 

@@ -1,20 +1,13 @@
 package auth
 
 import (
-	"context"
 	"net/http"
 	"os"
 	"strings"
 
+	"flashquest/internal/appcontext"
 	"flashquest/pkg/apiresp"
 	jwtsec "flashquest/pkg/security/jwt"
-)
-
-type contextKey string
-
-const (
-	ContextKeyUserID contextKey = "userID"
-	ContextKeyRole   contextKey = "role"
 )
 
 func RequireAuth(next http.Handler) http.Handler {
@@ -39,8 +32,9 @@ func RequireAuth(next http.Handler) http.Handler {
 			return
 		}
 
-		ctx := context.WithValue(r.Context(), ContextKeyUserID, claims.UserID)
-		ctx = context.WithValue(ctx, ContextKeyRole, claims.Role)
+		// Injeta no contexto usando o appcontext
+		ctx := appcontext.WithUserID(r.Context(), claims.UserID)
+		ctx = appcontext.WithRole(ctx, claims.Role)
 
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})

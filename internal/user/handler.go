@@ -5,7 +5,7 @@ import (
 	"errors"
 	"net/http"
 
-	"flashquest/internal/auth"
+	"flashquest/internal/appcontext"
 	"flashquest/pkg/apiresp"
 )
 
@@ -32,12 +32,8 @@ func NewHandler(service Service) *Handler {
 // @Security BearerAuth
 // @Router /users/me [get]
 func (h *Handler) GetCurrentUser(w http.ResponseWriter, r *http.Request) {
-	userIDValue := r.Context().Value(auth.ContextKeyUserID)
-	if userIDValue == nil {
-		apiresp.WriteError(w, http.StatusUnauthorized, "UNAUTHORIZED", "User ID not found in context")
-		return
-	}
-	userID, ok := userIDValue.(uint)
+	// Leitura limpa e fortemente tipada sem precisar tratar interface{}
+	userID, ok := appcontext.GetUserID(r.Context())
 	if !ok {
 		apiresp.WriteError(w, http.StatusUnauthorized, "UNAUTHORIZED", "User ID not found in context")
 		return
