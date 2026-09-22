@@ -1,29 +1,27 @@
 package user
 
-import (
-	"flashquest/pkg/models"
-)
-
-type Service struct {
-	repository *Repository
+type service struct {
+	repository Repository
 }
 
-func NewService(repository *Repository) *Service {
-	return &Service{
-		repository: repository,
-	}
+// NewService builds the default implementation of Service.
+func NewService(repository Repository) Service {
+	return &service{repository: repository}
 }
 
-func (s *Service) GetCurrentUser(userID uint) (*models.UserResponse, error) {
+func (s *service) GetCurrentUser(userID uint) (Response, error) {
 	user, err := s.repository.GetUserByID(userID)
 	if err != nil {
-		return nil, err
+		return Response{}, err
 	}
 
-	if user == nil {
-		return nil, nil
-	}
+	return toResponse(*user), nil
+}
 
-	response := user.ToResponse()
-	return &response, nil
+func toResponse(user User) Response {
+	return Response{
+		ID:    user.ID,
+		Name:  user.Name,
+		Email: user.Email,
+	}
 }

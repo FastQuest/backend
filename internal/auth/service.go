@@ -6,17 +6,9 @@ import (
 	"strings"
 	"time"
 
-	"flashquest/pkg/models"
 	jwtsec "flashquest/pkg/security/jwt"
 	"flashquest/pkg/security/password"
 	tokensec "flashquest/pkg/security/token"
-)
-
-var (
-	ErrInvalidCredentials   = errors.New("invalid credentials")
-	ErrDuplicatedEmail      = errors.New("duplicated email")
-	ErrRoleDomainNotAllowed = errors.New("role domain not allowed")
-	ErrUserNotFound         = errors.New("user not found")
 )
 
 const (
@@ -24,19 +16,20 @@ const (
 	accessTokenExpiresIn = int64(259200)
 )
 
-type Service struct {
+type service struct {
 	repository    Repository
 	privateKeyPEM string
 }
 
-func NewService(repository Repository, privateKeyPEM string) *Service {
-	return &Service{
+// NewService builds the default implementation of Service.
+func NewService(repository Repository, privateKeyPEM string) Service {
+	return &service{
 		repository:    repository,
 		privateKeyPEM: privateKeyPEM,
 	}
 }
 
-func (s *Service) Register(req RegisterRequest) (AuthResponse, error) {
+func (s *service) Register(req RegisterRequest) (AuthResponse, error) {
 	// Validate inputs
 	if err := validateRegisterRequest(req); err != nil {
 		return AuthResponse{}, err
@@ -48,11 +41,11 @@ func (s *Service) Register(req RegisterRequest) (AuthResponse, error) {
 		return AuthResponse{}, err
 	}
 
-	existingUser, err := s.repository.FindUserByEmail(normalizedEmail)
-	if err == nil && existingUser != nil {
+	existingCredentials, err := s.repository.FindCredentialsByEmail(normalizedEmail)
+	if err == nil && existingCredentials != nil {
 		return AuthResponse{}, ErrDuplicatedEmail
 	}
-	if err != nil && !errors.Is(err, ErrUserNotFound) {
+	if err != nil && !errors.Is(err, ErrNotFound) {
 		return AuthResponse{}, err
 	}
 
@@ -61,52 +54,52 @@ func (s *Service) Register(req RegisterRequest) (AuthResponse, error) {
 		return AuthResponse{}, err
 	}
 
-	user := &models.User{
+	credentials := &Credentials{
 		Name:         req.Name,
 		Email:        normalizedEmail,
 		PasswordHash: passwordHash,
 	}
-	if err := s.repository.CreateUserWithRole(user, roleName); err != nil {
+	if err := s.repository.CreateUserWithRole(credentials, roleName); err != nil {
 		if errors.Is(err, ErrDuplicatedEmail) {
 			return AuthResponse{}, ErrDuplicatedEmail
 		}
 		return AuthResponse{}, err
 	}
 
-	return s.issueTokens(user.ID, roleName)
+	return s.issueTokens(credentials.UserID, roleName)
 }
 
-func (s *Service) Login(req LoginRequest) (AuthResponse, error) {
+func (s *service) Login(req LoginRequest) (AuthResponse, error) {
 	// Validate inputs
 	if err := validateLoginRequest(req); err != nil {
 		return AuthResponse{}, err
 	}
 
 	normalizedEmail := normalizeEmail(req.Email)
-	user, err := s.repository.FindUserByEmail(normalizedEmail)
+	credentials, err := s.repository.FindCredentialsByEmail(normalizedEmail)
 	if err != nil {
-		if errors.Is(err, ErrUserNotFound) {
+		if errors.Is(err, ErrNotFound) {
 			return AuthResponse{}, ErrInvalidCredentials
 		}
 		return AuthResponse{}, err
 	}
 
-	if err := password.Compare(user.PasswordHash, req.Password); err != nil {
+	if err := password.Compare(credentials.PasswordHash, req.Password); err != nil {
 		return AuthResponse{}, ErrInvalidCredentials
 	}
 
-	roleName, err := s.repository.GetUserRole(user.ID)
+	roleName, err := s.repository.GetUserRole(credentials.UserID)
 	if err != nil {
-		if errors.Is(err, ErrUserNotFound) {
+		if errors.Is(err, ErrNotFound) {
 			return AuthResponse{}, ErrInvalidCredentials
 		}
 		return AuthResponse{}, err
 	}
 
-	return s.issueTokens(user.ID, roleName)
+	return s.issueTokens(credentials.UserID, roleName)
 }
 
-func (s *Service) issueTokens(userID uint, roleName string) (AuthResponse, error) {
+func (s *service) issueTokens(userID uint, roleName string) (AuthResponse, error) {
 	accessToken, err := jwtsec.SignAccessToken(jwtsec.AuthClaims{
 		UserID: userID,
 		Role:   roleName,

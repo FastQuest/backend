@@ -2,16 +2,20 @@ package user
 
 import (
 	"encoding/json"
-	"flashquest/internal/auth"
-	"flashquest/pkg/apiresp"
+	"errors"
 	"net/http"
+
+	"flashquest/internal/appcontext"
+	"flashquest/pkg/apiresp"
 )
 
+// Handler is the HTTP layer of the user domain. It depends only on the
+// Service interface, never on the database.
 type Handler struct {
-	service *Service
+	service Service
 }
 
-func NewHandler(service *Service) *Handler {
+func NewHandler(service Service) *Handler {
 	return &Handler{service: service}
 }
 
@@ -28,21 +32,20 @@ func NewHandler(service *Service) *Handler {
 // @Security BearerAuth
 // @Router /users/me [get]
 func (h *Handler) GetCurrentUser(w http.ResponseWriter, r *http.Request) {
-	userIDValue := r.Context().Value(auth.ContextKeyUserID)
-	if userIDValue == nil {
+	// Leitura limpa e fortemente tipada sem precisar tratar interface{}
+	userID, ok := appcontext.GetUserID(r.Context())
+	if !ok {
 		apiresp.WriteError(w, http.StatusUnauthorized, "UNAUTHORIZED", "User ID not found in context")
 		return
 	}
-	userID := userIDValue.(uint)
 
 	user, err := h.service.GetCurrentUser(userID)
 	if err != nil {
+		if errors.Is(err, ErrNotFound) {
+			apiresp.WriteError(w, http.StatusNotFound, "USER_NOT_FOUND", "User not found")
+			return
+		}
 		apiresp.WriteError(w, http.StatusInternalServerError, "DATABASE_ERROR", "Error fetching user data")
-		return
-	}
-
-	if user == nil {
-		apiresp.WriteError(w, http.StatusNotFound, "USER_NOT_FOUND", "User not found")
 		return
 	}
 

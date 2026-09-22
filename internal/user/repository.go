@@ -1,24 +1,25 @@
 package user
 
 import (
-	"flashquest/pkg/models"
+	"errors"
 
 	"gorm.io/gorm"
 )
 
-type Repository struct {
+type gormRepository struct {
 	db *gorm.DB
 }
 
-func NewRepository(db *gorm.DB) *Repository {
-	return &Repository{db: db}
+// NewRepository builds the GORM backed implementation of Repository.
+func NewRepository(db *gorm.DB) Repository {
+	return &gormRepository{db: db}
 }
 
-func (r *Repository) GetUserByID(userID uint) (*models.User, error) {
-	var user models.User
+func (r *gormRepository) GetUserByID(userID uint) (*User, error) {
+	var user User
 	if err := r.db.Where("id = ?", userID).First(&user).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return nil, nil
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, ErrNotFound
 		}
 		return nil, err
 	}

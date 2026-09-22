@@ -2,7 +2,6 @@ package main
 
 import (
 	"net/http"
-	"os"
 	"strings"
 	"time"
 
@@ -53,10 +52,7 @@ func NewServer(db *gorm.DB) *http.Server {
 
 func registerPaths(r *mux.Router, db *gorm.DB) {
 	// Auth Requests
-	authRepo := auth.NewRepositoryWithDB(db)
-	authService := auth.NewService(authRepo, os.Getenv("JWT_PRIVATE_KEY"))
-	r.HandleFunc("/api/auth/register", auth.RegisterHandler(authService)).Methods("POST")
-	r.HandleFunc("/api/auth/login", auth.LoginHandler(authService)).Methods("POST")
+	auth.RegisterRoutes(r, db)
 
 	// Question Requests
 	questionHandler := question.NewHandler(question.NewRepository(db))
@@ -100,8 +96,7 @@ func registerPaths(r *mux.Router, db *gorm.DB) {
 	protectedRouter.HandleFunc("/submissions", submissionHandler.CreateSubmission).Methods("POST")
 	protectedRouter.HandleFunc("/submissions", submissionHandler.GetUserSubmissions).Methods("GET")
 	protectedRouter.HandleFunc("/submissions/{id}", submissionHandler.GetSubmission).Methods("GET")
-	userHandler := user.NewHandler(user.NewService(user.NewRepository(db)))
-	protectedRouter.HandleFunc("/users/me", userHandler.GetCurrentUser).Methods("GET")
+	user.RegisterRoutes(protectedRouter, db)
 	answerHandler := answer.NewHandler(answer.NewRepository(db))
 	protectedRouter.HandleFunc("/answers/performance", answerHandler.GetSubjectPerfomanceHandler).Methods("GET")
 	protectedRouter.HandleFunc("/answers/overall-performance", answerHandler.GetUserOverallPerfomanceHandler).Methods("GET")

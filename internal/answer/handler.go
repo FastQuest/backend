@@ -2,7 +2,8 @@ package answer
 
 import (
 	"encoding/json"
-	"flashquest/internal/auth"
+	"flashquest/internal/appcontext"
+	"flashquest/pkg/apiresp"
 	"net/http"
 )
 
@@ -26,30 +27,22 @@ func NewHandler(repository *Repository) *Handler {
 // @Security BearerAuth
 // @Router /answers/performance [get]
 func (h *Handler) GetSubjectPerfomanceHandler(w http.ResponseWriter, r *http.Request) {
-	userIDValue := r.Context().Value(auth.ContextKeyUserID)
-	if userIDValue == nil {
-		http.Error(w, "User ID not found", http.StatusUnauthorized)
-		return
-	}
-
-	userIDUint, ok := userIDValue.(uint)
+	userID, ok := appcontext.GetUserID(r.Context())
 	if !ok {
-		http.Error(w, "Invalid User ID format in context", http.StatusInternalServerError)
+		apiresp.WriteError(w, http.StatusUnauthorized, "UNAUTHORIZED", "User ID not found in context")
 		return
 	}
 
-	userID := int(userIDUint)
-
-	subjectPerformance, err := h.repository.GetUserPerfomace(userID)
+	subjectPerformance, err := h.repository.GetUserPerfomace(int(userID))
 	if err != nil {
-		http.Error(w, "Error fetching subject performance", http.StatusInternalServerError)
+		apiresp.WriteError(w, http.StatusInternalServerError, "DATABASE_ERROR", "Error fetching subject performance")
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(subjectPerformance); err != nil {
-		http.Error(w, "Error encoding response", http.StatusInternalServerError)
-	}
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"data": subjectPerformance,
+	})
 }
 
 // GetUserOverallPerfomance godoc
@@ -64,28 +57,20 @@ func (h *Handler) GetSubjectPerfomanceHandler(w http.ResponseWriter, r *http.Req
 // @Security BearerAuth
 // @Router /answers/overall-performance [get]
 func (h *Handler) GetUserOverallPerfomanceHandler(w http.ResponseWriter, r *http.Request) {
-	userIDValue := r.Context().Value(auth.ContextKeyUserID)
-	if userIDValue == nil {
-		http.Error(w, "User ID not found", http.StatusUnauthorized)
-		return
-	}
-
-	userIDUint, ok := userIDValue.(uint)
+	userID, ok := appcontext.GetUserID(r.Context())
 	if !ok {
-		http.Error(w, "Invalid User ID format in context", http.StatusInternalServerError)
+		apiresp.WriteError(w, http.StatusUnauthorized, "UNAUTHORIZED", "User ID not found in context")
 		return
 	}
 
-	userID := int(userIDUint)
-
-	overallPerformance, err := h.repository.GetUserGeralPerfomace(userID)
+	overallPerformance, err := h.repository.GetUserGeralPerfomace(int(userID))
 	if err != nil {
-		http.Error(w, "Error fetching overall performance", http.StatusInternalServerError)
+		apiresp.WriteError(w, http.StatusInternalServerError, "DATABASE_ERROR", "Error fetching overall performance")
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(overallPerformance); err != nil {
-		http.Error(w, "Error encoding response", http.StatusInternalServerError)
-	}
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"data": overallPerformance,
+	})
 }
