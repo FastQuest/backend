@@ -5,7 +5,6 @@ import (
 	"errors"
 	"net/http"
 
-	"flashquest/internal/auth/dto"
 	"flashquest/pkg/apiresp"
 )
 
@@ -25,14 +24,14 @@ func NewHandler(service Service) *Handler {
 // @Tags         Auth
 // @Accept       json
 // @Produce      json
-// @Param        request body dto.RegisterRequest true "Registration payload"
-// @Success      200  {object}  dto.AuthResponse "Successfully registered"
+// @Param        request body RegisterRequest true "Registration payload"
+// @Success      200  {object}  AuthResponse "Successfully registered"
 // @Failure      400  {object}  map[string]interface{} "Invalid request payload or validation error"
 // @Failure      409  {object}  map[string]interface{} "Email already in use"
 // @Failure      422  {object}  map[string]interface{} "Email domain not allowed"
 // @Router       /api/auth/register [post]
 func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
-	var req dto.RegisterRequest
+	var req RegisterRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		apiresp.WriteError(w, http.StatusBadRequest, "INVALID_REQUEST", "Invalid request payload")
 		return
@@ -61,13 +60,13 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 // @Tags         Auth
 // @Accept       json
 // @Produce      json
-// @Param        request body dto.LoginRequest true "Login credentials"
-// @Success      200  {object}  dto.AuthResponse "Successfully authenticated"
+// @Param        request body LoginRequest true "Login credentials"
+// @Success      200  {object}  AuthResponse "Successfully authenticated"
 // @Failure      400  {object}  map[string]interface{} "Invalid request payload or validation error"
 // @Failure      401  {object}  map[string]interface{} "Invalid email or password"
 // @Router       /api/auth/login [post]
 func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
-	var req dto.LoginRequest
+	var req LoginRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		apiresp.WriteError(w, http.StatusBadRequest, "INVALID_REQUEST", "Invalid request payload")
 		return

@@ -3,8 +3,6 @@ package auth
 import (
 	"errors"
 	"time"
-
-	"flashquest/internal/auth/dto"
 )
 
 // Domain errors of the auth context. Infrastructure errors (gorm, pgconn) are
@@ -36,6 +34,6 @@ type Repository interface {
 
 // Service describes the business contract of the auth domain.
 type Service interface {
-	Register(req dto.RegisterRequest) (dto.AuthResponse, error)
-	Login(req dto.LoginRequest) (dto.AuthResponse, error)
+	Register(req RegisterRequest) (AuthResponse, error)
+	Login(req LoginRequest) (AuthResponse, error)
 }

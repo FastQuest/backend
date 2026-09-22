@@ -10,7 +10,6 @@ import (
 	"testing"
 	"time"
 
-	"flashquest/internal/auth/dto"
 	jwtsec "flashquest/pkg/security/jwt"
 	"flashquest/pkg/security/password"
 	tokensec "flashquest/pkg/security/token"
@@ -68,7 +67,7 @@ func TestRegisterCreatesUserRoleAndTokens(t *testing.T) {
 
 	service := NewService(repo, privateKeyPEM)
 
-	got, err := service.Register(dto.RegisterRequest{
+	got, err := service.Register(RegisterRequest{
 		Name:     "User",
 		Email:    "  USER@SEMPRECEUB.COM  ",
 		Password: "password123",
@@ -122,7 +121,7 @@ func TestRegisterReturnsDuplicatedEmail(t *testing.T) {
 		},
 	}, "key")
 
-	_, err := service.Register(dto.RegisterRequest{
+	_, err := service.Register(RegisterRequest{
 		Name:     "User",
 		Email:    "user@sempreceub.com",
 		Password: "password123",
@@ -135,7 +134,7 @@ func TestRegisterReturnsDuplicatedEmail(t *testing.T) {
 func TestRegisterReturnsRoleDomainNotAllowed(t *testing.T) {
 	service := NewService(&stubRepository{}, "key")
 
-	_, err := service.Register(dto.RegisterRequest{
+	_, err := service.Register(RegisterRequest{
 		Name:     "User",
 		Email:    "user@gmail.com",
 		Password: "password123",
@@ -168,7 +167,7 @@ func TestLoginIssuesTokensAndPersistsRefreshHash(t *testing.T) {
 	}
 	service := NewService(repo, privateKeyPEM)
 
-	got, err := service.Login(dto.LoginRequest{
+	got, err := service.Login(LoginRequest{
 		Email:    "  PROF@CEUB.EDU.BR ",
 		Password: "password123",
 	})
@@ -208,7 +207,7 @@ func TestLoginReturnsInvalidCredentials(t *testing.T) {
 		},
 	}, "key")
 
-	_, err := service.Login(dto.LoginRequest{
+	_, err := service.Login(LoginRequest{
 		Email:    "user@sempreceub.com",
 		Password: "password123",
 	})
@@ -284,7 +283,7 @@ func TestRegisterValidateEmail(t *testing.T) {
 	svc := NewService(repo, privateKeyPEM)
 
 	// Test empty email
-	_, err := svc.Register(dto.RegisterRequest{
+	_, err := svc.Register(RegisterRequest{
 		Name:     "User",
 		Email:    "",
 		Password: "password123",
@@ -294,7 +293,7 @@ func TestRegisterValidateEmail(t *testing.T) {
 	}
 
 	// Test invalid email format
-	_, err = svc.Register(dto.RegisterRequest{
+	_, err = svc.Register(RegisterRequest{
 		Name:     "User",
 		Email:    "notanemail",
 		Password: "password123",
@@ -304,7 +303,7 @@ func TestRegisterValidateEmail(t *testing.T) {
 	}
 
 	// Test email without local part
-	_, err = svc.Register(dto.RegisterRequest{
+	_, err = svc.Register(RegisterRequest{
 		Name:     "User",
 		Email:    "@ceub.edu.br",
 		Password: "password123",
@@ -320,7 +319,7 @@ func TestRegisterValidatePassword(t *testing.T) {
 	svc := NewService(repo, privateKeyPEM)
 
 	// Test empty password
-	_, err := svc.Register(dto.RegisterRequest{
+	_, err := svc.Register(RegisterRequest{
 		Name:     "User",
 		Email:    "user@sempreceub.com",
 		Password: "",
@@ -330,7 +329,7 @@ func TestRegisterValidatePassword(t *testing.T) {
 	}
 
 	// Test password too short
-	_, err = svc.Register(dto.RegisterRequest{
+	_, err = svc.Register(RegisterRequest{
 		Name:     "User",
 		Email:    "user@sempreceub.com",
 		Password: "short",
@@ -346,7 +345,7 @@ func TestRegisterValidateName(t *testing.T) {
 	svc := NewService(repo, privateKeyPEM)
 
 	// Test empty name
-	_, err := svc.Register(dto.RegisterRequest{
+	_, err := svc.Register(RegisterRequest{
 		Name:     "",
 		Email:    "user@sempreceub.com",
 		Password: "password123",
@@ -362,7 +361,7 @@ func TestLoginValidateEmail(t *testing.T) {
 	svc := NewService(repo, privateKeyPEM)
 
 	// Test empty email
-	_, err := svc.Login(dto.LoginRequest{
+	_, err := svc.Login(LoginRequest{
 		Email:    "",
 		Password: "password123",
 	})
@@ -371,7 +370,7 @@ func TestLoginValidateEmail(t *testing.T) {
 	}
 
 	// Test invalid email format
-	_, err = svc.Login(dto.LoginRequest{
+	_, err = svc.Login(LoginRequest{
 		Email:    "notanemail",
 		Password: "password123",
 	})
@@ -386,7 +385,7 @@ func TestLoginValidatePassword(t *testing.T) {
 	svc := NewService(repo, privateKeyPEM)
 
 	// Test empty password
-	_, err := svc.Login(dto.LoginRequest{
+	_, err := svc.Login(LoginRequest{
 		Email:    "user@sempreceub.com",
 		Password: "",
 	})
@@ -405,7 +404,7 @@ func TestLoginUserEnumeration(t *testing.T) {
 	svc := NewService(repo, privateKeyPEM)
 
 	// Both non-existent and wrong password should return same generic error
-	_, err := svc.Login(dto.LoginRequest{
+	_, err := svc.Login(LoginRequest{
 		Email:    "unknown@sempreceub.com",
 		Password: "password123",
 	})

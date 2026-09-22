@@ -6,7 +6,6 @@ import (
 	"strings"
 	"time"
 
-	"flashquest/internal/auth/dto"
 	jwtsec "flashquest/pkg/security/jwt"
 	"flashquest/pkg/security/password"
 	tokensec "flashquest/pkg/security/token"
@@ -30,29 +29,29 @@ func NewService(repository Repository, privateKeyPEM string) Service {
 	}
 }
 
-func (s *service) Register(req dto.RegisterRequest) (dto.AuthResponse, error) {
+func (s *service) Register(req RegisterRequest) (AuthResponse, error) {
 	// Validate inputs
 	if err := validateRegisterRequest(req); err != nil {
-		return dto.AuthResponse{}, err
+		return AuthResponse{}, err
 	}
 
 	normalizedEmail := normalizeEmail(req.Email)
 	roleName, err := resolveRole(normalizedEmail)
 	if err != nil {
-		return dto.AuthResponse{}, err
+		return AuthResponse{}, err
 	}
 
 	existingCredentials, err := s.repository.FindCredentialsByEmail(normalizedEmail)
 	if err == nil && existingCredentials != nil {
-		return dto.AuthResponse{}, ErrDuplicatedEmail
+		return AuthResponse{}, ErrDuplicatedEmail
 	}
 	if err != nil && !errors.Is(err, ErrNotFound) {
-		return dto.AuthResponse{}, err
+		return AuthResponse{}, err
 	}
 
 	passwordHash, err := password.Hash(req.Password)
 	if err != nil {
-		return dto.AuthResponse{}, err
+		return AuthResponse{}, err
 	}
 
 	credentials := &Credentials{
@@ -62,63 +61,63 @@ func (s *service) Register(req dto.RegisterRequest) (dto.AuthResponse, error) {
 	}
 	if err := s.repository.CreateUserWithRole(credentials, roleName); err != nil {
 		if errors.Is(err, ErrDuplicatedEmail) {
-			return dto.AuthResponse{}, ErrDuplicatedEmail
+			return AuthResponse{}, ErrDuplicatedEmail
 		}
-		return dto.AuthResponse{}, err
+		return AuthResponse{}, err
 	}
 
 	return s.issueTokens(credentials.UserID, roleName)
 }
 
-func (s *service) Login(req dto.LoginRequest) (dto.AuthResponse, error) {
+func (s *service) Login(req LoginRequest) (AuthResponse, error) {
 	// Validate inputs
 	if err := validateLoginRequest(req); err != nil {
-		return dto.AuthResponse{}, err
+		return AuthResponse{}, err
 	}
 
 	normalizedEmail := normalizeEmail(req.Email)
 	credentials, err := s.repository.FindCredentialsByEmail(normalizedEmail)
 	if err != nil {
 		if errors.Is(err, ErrNotFound) {
-			return dto.AuthResponse{}, ErrInvalidCredentials
+			return AuthResponse{}, ErrInvalidCredentials
 		}
-		return dto.AuthResponse{}, err
+		return AuthResponse{}, err
 	}
 
 	if err := password.Compare(credentials.PasswordHash, req.Password); err != nil {
-		return dto.AuthResponse{}, ErrInvalidCredentials
+		return AuthResponse{}, ErrInvalidCredentials
 	}
 
 	roleName, err := s.repository.GetUserRole(credentials.UserID)
 	if err != nil {
 		if errors.Is(err, ErrNotFound) {
-			return dto.AuthResponse{}, ErrInvalidCredentials
+			return AuthResponse{}, ErrInvalidCredentials
 		}
-		return dto.AuthResponse{}, err
+		return AuthResponse{}, err
 	}
 
 	return s.issueTokens(credentials.UserID, roleName)
 }
 
-func (s *service) issueTokens(userID uint, roleName string) (dto.AuthResponse, error) {
+func (s *service) issueTokens(userID uint, roleName string) (AuthResponse, error) {
 	accessToken, err := jwtsec.SignAccessToken(jwtsec.AuthClaims{
 		UserID: userID,
 		Role:   roleName,
 	}, accessTokenTTL, s.privateKeyPEM)
 	if err != nil {
-		return dto.AuthResponse{}, err
+		return AuthResponse{}, err
 	}
 
 	refreshToken, refreshHash, err := tokensec.GenerateAndHash()
 	if err != nil {
-		return dto.AuthResponse{}, err
+		return AuthResponse{}, err
 	}
 
 	if err := s.repository.SaveRefreshToken(userID, refreshHash, time.Now().Add(accessTokenTTL)); err != nil {
-		return dto.AuthResponse{}, err
+		return AuthResponse{}, err
 	}
 
-	return dto.AuthResponse{
+	return AuthResponse{
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
 		ExpiresIn:    accessTokenExpiresIn,
@@ -141,7 +140,7 @@ func normalizeEmail(email string) string {
 	return strings.ToLower(strings.TrimSpace(email))
 }
 
-func validateRegisterRequest(req dto.RegisterRequest) error {
+func validateRegisterRequest(req RegisterRequest) error {
 	if req.Name == "" {
 		return errors.New("name is required")
 	}
@@ -154,7 +153,7 @@ func validateRegisterRequest(req dto.RegisterRequest) error {
 	return nil
 }
 
-func validateLoginRequest(req dto.LoginRequest) error {
+func validateLoginRequest(req LoginRequest) error {
 	if err := validateEmail(req.Email); err != nil {
 		return err
 	}
