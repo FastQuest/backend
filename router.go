@@ -84,13 +84,13 @@ func registerPaths(r *mux.Router, db *gorm.DB) {
 	r.HandleFunc("/ai/gen-question", aiHandler.PostAIGenQuestion).Methods("POST")
 	r.HandleFunc("/ai/gen-questionset", aiHandler.PostAIGenQuestionSet).Methods("POST")
 
-	examHandler := exam.NewHandler(exam.NewRepository(db), question.NewRepository(db), questionoption.NewRepository(db), questionset.NewRepository(db))
-	r.HandleFunc("/exam", examHandler.CreateExam).Methods("POST")
-
 	r.PathPrefix("/swagger/").Handler(httpSwagger.WrapHandler)
 
 	protectedRouter := r.PathPrefix("/").Subrouter()
 	protectedRouter.Use(auth.RequireAuth)
+
+	examHandler := exam.NewHandler(exam.NewService(exam.NewRepository(db), question.NewRepository(db), questionoption.NewRepository(db), questionset.NewRepository(db)))
+	protectedRouter.HandleFunc("/exams", examHandler.CreateExam).Methods("POST")
 
 	submissionHandler := submission.NewHandler(submission.NewRepository(db))
 	protectedRouter.HandleFunc("/submissions", submissionHandler.CreateSubmission).Methods("POST")

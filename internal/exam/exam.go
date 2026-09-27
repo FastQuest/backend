@@ -1,3 +1,5 @@
+package exam
+
 import (
 	"context"
 	"flashquest/pkg/models"
@@ -17,5 +19,5 @@ type Repository interface {
 }
 
 type Service interface {
-	CreateExam(ctx context.Context, userID uint, newExam NewExam) (models.QuestionSetResponse, error)
+	CreateExamPayload(ctx context.Context, userID uint, newExam NewExam) (models.QuestionSetResponse, error)
 }

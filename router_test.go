@@ -26,6 +26,7 @@ func TestRoutesWiring(t *testing.T) {
 		{"login invalid payload", "POST", "/api/auth/login", "not-json", 400},
 		{"login missing password", "POST", "/api/auth/login", `{"email":"a@ceub.edu.br","password":""}`, 400},
 		{"users me unauthenticated", "GET", "/users/me", "", 401},
+		{"exams unauthenticated", "POST", "/exams", `{}`, 401},
 		{"subject performance unauthenticated", "GET", "/answers/performance", "", 401},
 		{"overall performance unauthenticated", "GET", "/answers/overall-performance", "", 401},
 	}
@@ -41,10 +42,18 @@ func TestRoutesWiring(t *testing.T) {
 		})
 	}
 
-	for _, path := range []string{"/users/me", "/answers/performance", "/answers/overall-performance"} {
+	for _, route := range []struct {
+		method string
+		path   string
+	}{
+		{http.MethodGet, "/users/me"},
+		{http.MethodPost, "/exams"},
+		{http.MethodGet, "/answers/performance"},
+		{http.MethodGet, "/answers/overall-performance"},
+	} {
 		var m mux.RouteMatch
-		if !r.Match(httptest.NewRequest(http.MethodGet, path, nil), &m) {
-			t.Fatalf("expected %s route to be registered", path)
+		if !r.Match(httptest.NewRequest(route.method, route.path, nil), &m) {
+			t.Fatalf("expected %s route to be registered", route.path)
 		}
 	}
 }

@@ -1,35 +1,47 @@
 package exam
 
 import (
+	"context"
 	"errors"
 	"flashquest/pkg/models"
 
 	"gorm.io/gorm"
 )
 
-type Repository struct {
+type gormRepository struct {
 	db *gorm.DB
 }
 
-func NewRepository(db *gorm.DB) *Repository {
-	return &Repository{db: db}
+func NewRepository(db *gorm.DB) Repository {
+	return &gormRepository{db: db}
 }
 
-func (r *Repository) GetInstanceWithSource(eiID int, ei *models.ExamInstance) error {
-	db := r.db
-	if db == nil {
-		return errors.New("database connection not established")
+func (r *gormRepository) GetInstanceWithSource(ctx context.Context, id uint) (*models.ExamInstance, error) {
+	if r.db == nil {
+		return nil, errors.New("database connection not established")
 	}
 
-	result := db.Preload("SourceExamInstance.Source").Where("id = ?", eiID).Find(&ei)
+	var ei models.ExamInstance
+	result := r.db.WithContext(ctx).Preload("SourceExamInstance.Source").First(&ei, id)
 
 	if result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-			return errors.New("Source Exam Instance not found")
+			return nil, errors.New("Source Exam Instance not found")
 		}
-		return errors.New("Error fetching Source Exam Instance")
+		return nil, errors.New("Error fetching Source Exam Instance")
+	}
+
+	return &ei, nil
+}
+
+func (r *gormRepository) CreateExamInstance(ctx context.Context, ei *models.ExamInstance) error {
+	if r.db == nil {
+		return errors.New("database connection not established")
+	}
+
+	if err := r.db.WithContext(ctx).Create(ei).Error; err != nil {
+		return err
 	}
 
 	return nil
 }
-

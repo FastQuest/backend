@@ -2,27 +2,18 @@ package exam
 
 import (
 	"encoding/json"
-	"flashquest/internal/question"
-	"flashquest/internal/questionoption"
-	"flashquest/internal/questionset"
 	"fmt"
 	"net/http"
+
+	"flashquest/internal/appcontext"
 )
 
 type Handler struct {
-	examRepository          *Repository
-	questionRepository      *question.Repository
-	questionOptionRepository *questionoption.Repository
-	questionSetRepository   *questionset.Repository
+	service Service
 }
 
-func NewHandler(examRepository *Repository, questionRepository *question.Repository, questionOptionRepository *questionoption.Repository, questionSetRepository *questionset.Repository) *Handler {
-	return &Handler{
-		examRepository:           examRepository,
-		questionRepository:       questionRepository,
-		questionOptionRepository: questionOptionRepository,
-		questionSetRepository:    questionSetRepository,
-	}
+func NewHandler(service Service) *Handler {
+	return &Handler{service: service}
 }
 
 // CreateExam godoc
@@ -46,7 +37,13 @@ func (h *Handler) CreateExam(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response, err := CreateExamPayload(h.examRepository, h.questionRepository, h.questionOptionRepository, h.questionSetRepository, newExam)
+	userID, ok := appcontext.GetUserID(r.Context())
+	if !ok {
+		http.Error(w, "User ID not found in context", http.StatusUnauthorized)
+		return
+	}
+
+	response, err := h.service.CreateExamPayload(r.Context(), userID, newExam)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Error creating exam: %v", err), http.StatusInternalServerError)
 		return

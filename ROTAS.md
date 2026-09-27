@@ -665,7 +665,7 @@ Cria uma nova fonte de exame com sua instância.
 ## 🎓 Exames (Exams)
 
 ### 1. Criar Exame com Lista de Exercícios e Questões
-**`POST /exam`**
+**`POST /exams`**
 
 Cria um exame completo com lista de exercícios e questões em uma única operação.
 

@@ -1,33 +1,40 @@
 package exam
 
 import (
-	"errors"
+	"context"
+	"time"
+
 	"flashquest/internal/question"
 	"flashquest/internal/questionoption"
 	"flashquest/internal/questionset"
 	"flashquest/pkg/models"
 	"flashquest/pkg/sliceutil"
-	"fmt"
-	"time"
 )
 
-func (r *Repository) SendExamInstance(ei ...*models.ExamInstance) error {
-	db := r.db
-	if db == nil {
-		return errors.New("database connection not established")
-	}
-
-	if err := db.Create(ei).Error; err != nil {
-		return fmt.Errorf("failed to create question: %w", err)
-	}
-
-	return nil
+type service struct {
+	examRepository           Repository
+	questionRepository       *question.Repository
+	questionOptionRepository *questionoption.Repository
+	questionSetRepository    *questionset.Repository
 }
 
-func CreateExamPayload(examRepository *Repository, questionRepository *question.Repository, questionOptionRepository *questionoption.Repository, questionSetRepository *questionset.Repository, newExam NewExam) (models.QuestionSetResponse, error) {
+func NewService(examRepository Repository, questionRepository *question.Repository, questionOptionRepository *questionoption.Repository, questionSetRepository *questionset.Repository) Service {
+	return &service{
+		examRepository:           examRepository,
+		questionRepository:       questionRepository,
+		questionOptionRepository: questionOptionRepository,
+		questionSetRepository:    questionSetRepository,
+	}
+}
+
+func (s *service) CreateExamPayload(ctx context.Context, userID uint, newExam NewExam) (models.QuestionSetResponse, error) {
+	if err := ctx.Err(); err != nil {
+		return models.QuestionSetResponse{}, err
+	}
+
 	exam := newExam.Exam
 
-	errSendE := examRepository.SendExamInstance(&exam)
+	errSendE := s.examRepository.CreateExamInstance(ctx, &exam)
 	if errSendE != nil {
 		return models.QuestionSetResponse{}, errSendE
 	}
@@ -35,13 +42,13 @@ func CreateExamPayload(examRepository *Repository, questionRepository *question.
 	questionSet := models.QuestionSet{
 		Name:        newExam.List.Name,
 		Description: newExam.List.Description,
-		UserID:      1,
+		UserID:      int(userID),
 		CreatedAt:   time.Now(),
 		IsPrivate:   false,
 		Type:        "list",
 	}
 
-	errSendQS := questionSetRepository.SendQuestionSets(&questionSet)
+	errSendQS := s.questionSetRepository.SendQuestionSets(&questionSet)
 	if errSendQS != nil {
 		return models.QuestionSetResponse{}, errSendQS
 	}
@@ -51,14 +58,14 @@ func CreateExamPayload(examRepository *Repository, questionRepository *question.
 		questions = append(questions, models.Question{
 			Statement:            q.Statement,
 			SubjectID:            q.SubjectID,
-			UserID:               1,
+			UserID:               int(userID),
 			CreatedAt:            time.Now(),
 			UpdatedAt:            time.Now(),
 			SourceExamInstanceID: &exam.ID,
 		})
 	}
 
-	errSendQ := questionRepository.SendQuestions(sliceutil.PtrSlice(questions)...)
+	errSendQ := s.questionRepository.SendQuestions(sliceutil.PtrSlice(questions)...)
 	if errSendQ != nil {
 		return models.QuestionSetResponse{}, errSendQ
 	}
@@ -74,7 +81,7 @@ func CreateExamPayload(examRepository *Repository, questionRepository *question.
 		}
 	}
 
-	errSendQO := questionOptionRepository.SendQuestionOptions(&questionoptions)
+	errSendQO := s.questionOptionRepository.SendQuestionOptions(&questionoptions)
 	if errSendQO != nil {
 		return models.QuestionSetResponse{}, errSendQO
 	}
@@ -88,7 +95,7 @@ func CreateExamPayload(examRepository *Repository, questionRepository *question.
 		})
 	}
 
-	errSendQSQ := questionSetRepository.SendQuestionSetQuestionInternal(sliceutil.PtrSlice(questionSetQuestion)...)
+	errSendQSQ := s.questionSetRepository.SendQuestionSetQuestionInternal(sliceutil.PtrSlice(questionSetQuestion)...)
 	if errSendQSQ != nil {
 		return models.QuestionSetResponse{}, errSendQSQ
 	}
