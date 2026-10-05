@@ -16,10 +16,10 @@
 
 ## 🎯 Questões (Questions)
 
-### 1. Criar Questão(ões)
+### 1. Criar Questão
 **`POST /questions`**
 
-Cria uma ou múltiplas questões. Pode enviar um objeto único ou um array.
+Cria uma única questão. Aceita apenas um objeto; para criar várias questões use `POST /questions/batch`.
 
 **Headers:**
 ```
@@ -50,23 +50,7 @@ Content-Type: application/json
 }
 ```
 
-**Body (Array de questões - batch):**
-```json
-[
-  {
-    "statement": "Pergunta 1?",
-    "subject_id": 1,
-    "user_id": 1
-  },
-  {
-    "statement": "Pergunta 2?",
-    "subject_id": 2,
-    "user_id": 2
-  }
-]
-```
-
-**Response (201 Created) - Questão única:**
+**Response (201 Created) - `POST /questions`:**
 ```json
 {
   "id": 11,
@@ -83,7 +67,33 @@ Content-Type: application/json
 }
 ```
 
-**Response (201 Created) - Array de questões:**
+### 1.1. Criar Questões em Lote
+**`POST /questions/batch`**
+
+Cria múltiplas questões. Aceita apenas um array não vazio de objetos. As questões são criadas em ordem: se uma delas for inválida ou falhar, as anteriores permanecem criadas.
+
+**Headers:**
+```
+Content-Type: application/json
+```
+
+**Body:**
+```json
+[
+  {
+    "statement": "Pergunta 1?",
+    "subject_id": 1,
+    "user_id": 1
+  },
+  {
+    "statement": "Pergunta 2?",
+    "subject_id": 2,
+    "user_id": 2
+  }
+]
+```
+
+**Response (201 Created) - `POST /questions/batch` (sempre um array):**
 ```json
 [
   {
