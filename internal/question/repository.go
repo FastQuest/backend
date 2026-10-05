@@ -2,111 +2,107 @@ package question
 
 import (
 	"errors"
-	filters "flashquest/pkg"
-	"flashquest/pkg/models"
 
 	"gorm.io/gorm"
 )
 
-var ErrQuestionNotFound = errors.New("question not found")
-
-type Repository struct {
+type gormRepository struct {
 	db *gorm.DB
 }
 
-func NewRepository(db *gorm.DB) *Repository {
-	return &Repository{db: db}
+// NewRepository builds the GORM backed implementation of Repository.
+func NewRepository(db *gorm.DB) Repository {
+	return &gormRepository{db: db}
 }
 
-func (r *Repository) DB() *gorm.DB {
-	return r.db
+func (r *gormRepository) CreateQuestion(question *Question) error {
+	return translateError(r.db.Create(question).Error)
 }
 
-func (r *Repository) ApplyFilters(params map[string][]string) *gorm.DB {
-	query := r.db.Model(&models.Question{})
-	for param, handler := range filters.QuestionFilters {
-		if values, exists := params[param]; exists && len(values) > 0 && values[0] != "" {
-			query = handler(values[0], query)
-		}
-	}
-	return query
+func (r *gormRepository) CreateQuestions(questions []*Question) error {
+	return translateError(r.db.Create(questions).Error)
 }
 
-func createQuestion(db *gorm.DB, question *models.Question) error {
-	return db.Create(question).Error
-}
-
-func createQuestions(db *gorm.DB, questions []*models.Question) error {
-	return db.Create(questions).Error
-}
-
-func countQuestions(qb *gorm.DB) (int64, error) {
+func (r *gormRepository) CountQuestions(filter QuestionFilterDTO) (int64, error) {
 	var total int64
-	if err := qb.Count(&total).Error; err != nil {
-		return 0, err
+	if err := applyFilters(r.db.Model(&Question{}), filter).Count(&total).Error; err != nil {
+		return 0, translateError(err)
 	}
 	return total, nil
 }
 
-func findQuestions(qb *gorm.DB, offset, limit int) ([]models.Question, error) {
-	var questions []models.Question
-	if err := qb.Offset(offset).Limit(limit).Find(&questions).Error; err != nil {
-		return nil, err
+func (r *gormRepository) FindQuestions(filter QuestionFilterDTO, orderBy string, includes []string, offset, limit int) ([]Question, error) {
+	var questions []Question
+	err := applyFilters(r.db.Model(&Question{}), filter).
+		Order(orderBy).
+		Scopes(applyIncludes(includes)).
+		Offset(offset).
+		Limit(limit).
+		Find(&questions).Error
+	if err != nil {
+		return nil, translateError(err)
 	}
 	return questions, nil
 }
 
-func findQuestionByID(db *gorm.DB, id string, includes []string) (*models.Question, error) {
-	var question models.Question
-	if err := db.Scopes(models.ApplyQuestionIncludes(includes)).Where("id = ?", id).First(&question).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, ErrQuestionNotFound
-		}
-		return nil, err
+func (r *gormRepository) FindQuestionByID(id string, includes []string) (*Question, error) {
+	var question Question
+	if err := r.db.Scopes(applyIncludes(includes)).Where("id = ?", id).First(&question).Error; err != nil {
+		return nil, translateError(err)
 	}
 	return &question, nil
 }
 
-func findQuestionsByIDs(db *gorm.DB, ids []uint, includes []string) ([]models.Question, error) {
-	var questions []models.Question
-	if err := db.Scopes(models.ApplyQuestionIncludes(includes)).Where("id IN ?", ids).Find(&questions).Error; err != nil {
-		return nil, err
+func (r *gormRepository) FindQuestionsByIDs(ids []uint, includes []string) ([]Question, error) {
+	var questions []Question
+	if err := r.db.Scopes(applyIncludes(includes)).Where("id IN ?", ids).Find(&questions).Error; err != nil {
+		return nil, translateError(err)
 	}
 	return questions, nil
 }
 
-func deleteQuestionByID(db *gorm.DB, id string) (int64, error) {
-	result := db.Delete(&models.Question{}, id)
+func (r *gormRepository) DeleteQuestionByID(id string) (int64, error) {
+	result := r.db.Delete(&Question{}, id)
 	if result.Error != nil {
-		return 0, result.Error
+		return 0, translateError(result.Error)
 	}
 	return result.RowsAffected, nil
 }
 
-func (r *Repository) GetQuestionFilters() (*QuestionFilters, error) {
-	var filters QuestionFilters
+func (r *gormRepository) GetFilterOptions() (*FilterOptions, error) {
+	var options FilterOptions
 
 	err := r.db.Table("subject").
 		Select("id, name").
 		Order("name ASC").
-		Scan(&filters.Subjects).Error
+		Scan(&options.Subjects).Error
 	if err != nil {
-		return nil, err
+		return nil, translateError(err)
 	}
 
+	// The sources error is overwritten by the years query below, as it has
+	// always been: a failure there only leaves the sources empty.
 	err = r.db.Table("source_exam_instance").
 		Select("id, edition AS name").
 		Order("edition ASC").
-		Scan(&filters.Sources).Error
+		Scan(&options.Sources).Error
 
 	err = r.db.Table("source_exam_instance").
 		Distinct("year").
 		Where("year IS NOT NULL").
 		Order("year DESC").
-		Pluck("year", &filters.Years).Error
+		Pluck("year", &options.Years).Error
 	if err != nil {
-		return nil, err
+		return nil, translateError(err)
 	}
 
-	return &filters, nil
+	return &options, nil
+}
+
+// translateError keeps gorm sentinels from escaping the repository.
+func translateError(err error) error {
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return ErrNotFound
+	}
+	return err
 }

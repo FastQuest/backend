@@ -18,14 +18,14 @@ import (
 var aiClient *genai.Client
 
 type Service struct {
-	questionRepository       *question.Repository
+	questionService          question.Service
 	questionOptionRepository *questionoption.Repository
 	questionSetRepository    *questionset.Repository
 }
 
-func NewService(questionRepository *question.Repository, questionOptionRepository *questionoption.Repository, questionSetRepository *questionset.Repository) *Service {
+func NewService(questionService question.Service, questionOptionRepository *questionoption.Repository, questionSetRepository *questionset.Repository) *Service {
 	return &Service{
-		questionRepository:       questionRepository,
+		questionService:          questionService,
 		questionOptionRepository: questionOptionRepository,
 		questionSetRepository:    questionSetRepository,
 	}
@@ -149,15 +149,13 @@ Seguindo o formato a cima cria uma lista com 10 questões sobre: %s
 	return questionSet
 }
 
-func formatQuestions(aiQuestions ...AIQuestionResponse) []models.Question {
-	questions := make([]models.Question, 0, len(aiQuestions))
+func formatQuestions(aiQuestions ...AIQuestionResponse) []question.CreateRequest {
+	questions := make([]question.CreateRequest, 0, len(aiQuestions))
 	for _, q := range aiQuestions {
-		questions = append(questions, models.Question{
+		questions = append(questions, question.CreateRequest{
 			Statement: q.Statement,
 			SubjectID: 7,
 			UserID:    2,
-			CreatedAt: time.Now(),
-			UpdatedAt: time.Now(),
 		})
 	}
 	return questions
@@ -176,11 +174,15 @@ func formatQuestionOption(questionID uint, aiAnswers ...AIAnswerResponse) []mode
 }
 
 func (s *Service) addAIQuestion(aiQuestion AIQuestionResponse) {
-	q := formatQuestions(aiQuestion)[0]
-	s.questionRepository.SendQuestions(&q)
+	created, _ := s.questionService.SendQuestions(formatQuestions(aiQuestion))
 	log.Println("Successful Question Insert")
 
-	questionoptionsPayload := formatQuestionOption(q.ID, aiQuestion.Answers...)
+	var questionID uint
+	if len(created) > 0 {
+		questionID = created[0].ID
+	}
+
+	questionoptionsPayload := formatQuestionOption(questionID, aiQuestion.Answers...)
 	s.questionOptionRepository.SendQuestionOptions(&questionoptionsPayload)
 	log.Println("Successful QuestionOption Insert")
 }
@@ -200,8 +202,7 @@ func (s *Service) addAIQuestionSet(aiQuestionSet AIQuestionSetResponse) error {
 		return errSendQS
 	}
 
-	questions := formatQuestions(aiQuestionSet.Questions...)
-	errSendQ := s.questionRepository.SendQuestions(sliceutil.PtrSlice(questions)...)
+	questions, errSendQ := s.questionService.SendQuestions(formatQuestions(aiQuestionSet.Questions...))
 	if errSendQ != nil {
 		return errSendQ
 	}
