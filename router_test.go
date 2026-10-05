@@ -28,6 +28,14 @@ func TestRoutesWiring(t *testing.T) {
 		{"users me unauthenticated", "GET", "/users/me", "", 401},
 		{"subject performance unauthenticated", "GET", "/answers/performance", "", 401},
 		{"overall performance unauthenticated", "GET", "/answers/overall-performance", "", 401},
+		{"create question invalid payload", "POST", "/questions", "not-json", 400},
+		{"create question rejects array payload", "POST", "/questions", `[{"statement":"a","user_id":1}]`, 400},
+		{"create question missing fields", "POST", "/questions", `{"statement":"a"}`, 400},
+		{"batch questions invalid payload", "POST", "/questions/batch", "not-json", 400},
+		{"batch questions rejects object payload", "POST", "/questions/batch", `{"statement":"a","user_id":1}`, 400},
+		{"batch questions empty", "POST", "/questions/batch", `[]`, 400},
+		{"batch questions missing fields", "POST", "/questions/batch", `[{"statement":"","user_id":1}]`, 400},
+		{"questions by ids empty", "POST", "/questions/by-ids", `{"ids":[]}`, 400},
 	}
 
 	for _, tc := range cases {
@@ -45,6 +53,22 @@ func TestRoutesWiring(t *testing.T) {
 		var m mux.RouteMatch
 		if !r.Match(httptest.NewRequest(http.MethodGet, path, nil), &m) {
 			t.Fatalf("expected %s route to be registered", path)
+		}
+	}
+
+	questionRoutes := []struct{ method, path string }{
+		{http.MethodPost, "/questions"},
+		{http.MethodPost, "/questions/batch"},
+		{http.MethodGet, "/questions"},
+		{http.MethodGet, "/questions/filters"},
+		{http.MethodPost, "/questions/by-ids"},
+		{http.MethodGet, "/questions/1"},
+		{http.MethodDelete, "/questions/1"},
+	}
+	for _, route := range questionRoutes {
+		var m mux.RouteMatch
+		if !r.Match(httptest.NewRequest(route.method, route.path, nil), &m) {
+			t.Fatalf("expected %s %s route to be registered", route.method, route.path)
 		}
 	}
 }
