@@ -2,13 +2,13 @@ package submission
 
 import (
 	"flashquest/internal/answer"
+	"flashquest/internal/questionoption"
 	"flashquest/pkg/models"
 	"fmt"
 )
 
 type repository interface {
 	CreateSubmission(submission *models.Submission) (*models.Submission, error)
-	GetQuestionOptionsByIDs(ids []uint) ([]models.QuestionOption, error)
 	GetSubmissionsByUserID(userID uint, questionSetID *uint, page, pageSize int) ([]models.Submission, int64, error)
 	GetSubmissionByID(submissionID uint, includes string) (*models.Submission, error)
 }
@@ -20,12 +20,17 @@ type Service interface {
 }
 
 type service struct {
-	repository    repository
-	answerService answer.Service
+	repository            repository
+	answerService         answer.Service
+	questionOptionService questionoption.Service
 }
 
-func NewService(repository repository, answerService answer.Service) Service {
-	return &service{repository: repository, answerService: answerService}
+func NewService(repository repository, answerService answer.Service, questionOptionService questionoption.Service) Service {
+	return &service{
+		repository:            repository,
+		answerService:         answerService,
+		questionOptionService: questionOptionService,
+	}
 }
 
 func (s *service) CreateSubmissionPayload(req CreateSubmissionRequest) (models.Submission, error) {
@@ -35,12 +40,12 @@ func (s *service) CreateSubmissionPayload(req CreateSubmissionRequest) (models.S
 		optionsIDs[i] = uint(a.OptionID)
 	}
 
-	options, err := s.repository.GetQuestionOptionsByIDs(optionsIDs)
+	options, err := s.questionOptionService.GetQuestionOptionsByIDs(optionsIDs)
 	if err != nil {
 		return models.Submission{}, err
 	}
 
-	optionsByID := make(map[uint]models.QuestionOption, len(options))
+	optionsByID := make(map[uint]questionoption.Response, len(options))
 	for _, option := range options {
 		optionsByID[option.ID] = option
 	}
@@ -57,7 +62,7 @@ func (s *service) CreateSubmissionPayload(req CreateSubmissionRequest) (models.S
 		if !exists {
 			return models.Submission{}, fmt.Errorf("question option %d not found", answer.OptionID)
 		}
-		if option.Is_correct {
+		if option.IsCorrect {
 			submission.CorrectCount++
 		}
 	}
@@ -73,7 +78,7 @@ func (s *service) CreateSubmissionPayload(req CreateSubmissionRequest) (models.S
 			SubmissionID:     createdSubmission.ID,
 			QuestionOptionID: a.OptionID,
 			QuestionID:       a.QuestionID,
-			IsCorrect:        optionsByID[uint(a.OptionID)].Is_correct,
+			IsCorrect:        optionsByID[uint(a.OptionID)].IsCorrect,
 		}
 	}
 

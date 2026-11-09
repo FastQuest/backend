@@ -2,7 +2,6 @@ package submission
 
 import (
 	"errors"
-	"flashquest/internal/questionoption"
 	"flashquest/pkg/models"
 	"strings"
 
@@ -22,13 +21,6 @@ func (r *Repository) CreateSubmission(submission *models.Submission) (*models.Su
 		return nil, errors.New("database connection not established")
 	}
 	return createSubmission(r.db, submission)
-}
-
-func (r *Repository) GetQuestionOptionsByIDs(ids []uint) ([]models.QuestionOption, error) {
-	if r.db == nil {
-		return nil, errors.New("database connection not established")
-	}
-	return questionoption.ReadQuestionOptionsByIDArray(r.db, ids)
 }
 
 func (r *Repository) GetSubmissionsByUserID(userID uint, questionSetID *uint, page, pageSize int) ([]models.Submission, int64, error) {

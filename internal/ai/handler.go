@@ -30,7 +30,11 @@ func (h *Handler) PostAIGenQuestion(w http.ResponseWriter, r *http.Request) {
 	}
 
 	log.Println("Successful POST")
-	h.service.addAIQuestion(genQuestion(test.Text))
+	if err := h.service.addAIQuestion(genQuestion(test.Text)); err != nil {
+		http.Error(w, "Failed to generate question", http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusCreated)
 }
 
 // GetQuestions godoc

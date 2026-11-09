@@ -3,7 +3,6 @@ package questionoption
 import (
 	"encoding/json"
 	"errors"
-	"flashquest/pkg/models"
 	"fmt"
 	"io"
 	"net/http"
@@ -12,134 +11,92 @@ import (
 )
 
 type Handler struct {
-	repository *Repository
+	service Service
 }
 
-func NewHandler(repository *Repository) *Handler {
-	return &Handler{repository: repository}
+func NewHandler(service Service) *Handler {
+	return &Handler{service: service}
 }
 
 // @Summary Create question options for a question
 // @Description Creates one or more question options linked to the question identified by its ID.
 // @Tags QuestionOptions
 // @Param id path string true "Question ID"
-// @Param questionoptions body []models.QuestionOption true "List of question options to create"
+// @Param questionoptions body []CreateRequest true "List of question options to create"
 // @Success 201 {object} map[string]interface{} "Question options created successfully"
 // @Failure 400 {string} string "Question ID is required or invalid request body"
 // @Failure 404 {string} string "Question not found"
 // @Failure 500 {string} string "Internal server error"
 // @Router /questions/{id}/question-options [post]
 func (h *Handler) PostQuestionOptions(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	questionID := vars["id"]
-
+	questionID := mux.Vars(r)["id"]
 	if questionID == "" {
 		http.Error(w, "Question ID is required", http.StatusBadRequest)
 		return
 	}
 
-	db := h.repository.DB()
-	if db == nil {
-		http.Error(w, "Database connection not established", http.StatusInternalServerError)
-		return
-	}
-
-	question, err := findQuestionByID(db, questionID)
-	if err != nil {
-		if errors.Is(err, ErrQuestionNotFound) {
-			http.Error(w, "Question not found", http.StatusNotFound)
-		} else {
-			http.Error(w, "Error checking question", http.StatusInternalServerError)
-		}
-		return
-	}
-
-	var questionoptions []models.QuestionOption
-	if err := json.NewDecoder(r.Body).Decode(&questionoptions); err != nil {
+	var requests []CreateRequest
+	if err := json.NewDecoder(r.Body).Decode(&requests); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
-	for i, questionoption := range questionoptions {
-		if questionoption.Text == "" {
-			http.Error(w, fmt.Sprintf("Question option text is required (index %d)", i), http.StatusBadRequest)
-			return
-		}
-		questionoptions[i].QuestionID = question.ID
-	}
-
-	rowsAffected, err := createQuestionOptions(db, &questionoptions)
+	result, err := h.service.CreateQuestionOptions(questionID, requests)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Error saving question options: %v", err), http.StatusInternalServerError)
+		switch {
+		case errors.Is(err, ErrInvalidRequest):
+			http.Error(w, err.Error(), http.StatusBadRequest)
+		case errors.Is(err, ErrQuestionNotFound):
+			http.Error(w, "Question not found", http.StatusNotFound)
+		default:
+			http.Error(w, fmt.Sprintf("Error saving question options: %v", err), http.StatusInternalServerError)
+		}
 		return
 	}
-
-	if rowsAffected == 0 {
+	if result.Count == 0 {
 		http.Error(w, "No question options were created", http.StatusInternalServerError)
 		return
 	}
 
-	createdIDs := make([]uint, len(questionoptions))
-	for i, questionoption := range questionoptions {
-		createdIDs[i] = questionoption.ID
-	}
-
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	if err := json.NewEncoder(w).Encode(map[string]interface{}{
 		"message": "Question options created successfully",
-		"count":   rowsAffected,
-		"ids":     createdIDs,
-	})
+		"count":   result.Count,
+		"ids":     result.IDs,
+	}); err != nil {
+		http.Error(w, "Error encoding response", http.StatusInternalServerError)
+	}
 }
 
 // @Summary List question options for a question
 // @Description Returns all question options associated with the specified question.
 // @Tags QuestionOptions
 // @Param id path string true "Question ID"
-// @Success 200 {array} models.QuestionOption
+// @Success 200 {array} Response
 // @Failure 400 {string} string "Question ID is required"
-// @Failure 404 {string} string "No question options found for this question"
 // @Failure 500 {string} string "Internal server error"
 // @Router /questions/{id}/question-options [get]
 func (h *Handler) GetQuestionOptions(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	questionID := vars["id"]
-
+	questionID := mux.Vars(r)["id"]
 	if questionID == "" {
 		http.Error(w, "Question ID is required", http.StatusBadRequest)
 		return
 	}
 
-	db := h.repository.DB()
-	if db == nil {
-		http.Error(w, "Database connection not established", http.StatusInternalServerError)
-		return
-	}
-
-	questionoptions, err := findQuestionOptionsByQuestionID(db, questionID)
+	options, err := h.service.GetQuestionOptionsByQuestionID(questionID)
 	if err != nil {
-		if errors.Is(err, ErrQuestionNotFound) {
-			http.Error(w, "No question options found for this question", http.StatusNotFound)
-		} else {
-			http.Error(w, fmt.Sprintf("Error fetching question options: %v", err), http.StatusInternalServerError)
-		}
+		http.Error(w, fmt.Sprintf("Error fetching question options: %v", err), http.StatusInternalServerError)
 		return
 	}
-
-	fmt.Printf("Found %d question options for question %s\n", len(questionoptions), questionID)
-
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(questionoptions); err != nil {
-		http.Error(w, "Error encoding response", http.StatusInternalServerError)
-	}
+	sendJSON(w, options, http.StatusOK)
 }
 
 // @Summary Fetch question options by IDs
 // @Description Retrieves question options matching the provided list of question option IDs.
 // @Tags QuestionOptions
 // @Param request body QuestionOptionsBody true "Question option IDs payload"
-// @Success 200 {array} models.QuestionOption
+// @Success 200 {array} Response
 // @Failure 400 {string} string "Invalid request body"
 // @Failure 500 {string} string "Internal server error"
 // @Router /question-options/by-ids [post]
@@ -150,23 +107,24 @@ func (h *Handler) GetQuestionOptionsByIDArray(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	var questionoptionsBody QuestionOptionsBody
-	errConvert := json.Unmarshal(body, &questionoptionsBody)
-	if errConvert != nil {
+	var request QuestionOptionsBody
+	if err := json.Unmarshal(body, &request); err != nil {
 		http.Error(w, "Invalid body", http.StatusBadRequest)
 		return
 	}
 
-	db := h.repository.DB()
-	if db == nil {
-		http.Error(w, "Database connection not established", http.StatusInternalServerError)
+	options, err := h.service.GetQuestionOptionsByIDs(request.QuestionOptionIDs)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Error fetching question options: %v", err), http.StatusInternalServerError)
 		return
 	}
+	sendJSON(w, options, http.StatusOK)
+}
 
-	questionoptions, _ := ReadQuestionOptionsByIDArray(db, questionoptionsBody.QuestionOptionIDs)
-
+func sendJSON(w http.ResponseWriter, data interface{}, statusCode int) {
 	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(questionoptions); err != nil {
+	w.WriteHeader(statusCode)
+	if err := json.NewEncoder(w).Encode(data); err != nil {
 		http.Error(w, "Error encoding response", http.StatusInternalServerError)
 	}
 }

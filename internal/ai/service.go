@@ -18,16 +18,16 @@ import (
 var aiClient *genai.Client
 
 type Service struct {
-	questionService          question.Service
-	questionOptionRepository *questionoption.Repository
-	questionSetRepository    *questionset.Repository
+	questionService       question.Service
+	questionOptionService questionoption.Service
+	questionSetRepository *questionset.Repository
 }
 
-func NewService(questionService question.Service, questionOptionRepository *questionoption.Repository, questionSetRepository *questionset.Repository) *Service {
+func NewService(questionService question.Service, questionOptionService questionoption.Service, questionSetRepository *questionset.Repository) *Service {
 	return &Service{
-		questionService:          questionService,
-		questionOptionRepository: questionOptionRepository,
-		questionSetRepository:    questionSetRepository,
+		questionService:       questionService,
+		questionOptionService: questionOptionService,
+		questionSetRepository: questionSetRepository,
 	}
 }
 
@@ -161,30 +161,36 @@ func formatQuestions(aiQuestions ...AIQuestionResponse) []question.CreateRequest
 	return questions
 }
 
-func formatQuestionOption(questionID uint, aiAnswers ...AIAnswerResponse) []models.QuestionOption {
-	questionoptions := make([]models.QuestionOption, 0, len(aiAnswers))
+func formatQuestionOption(aiAnswers ...AIAnswerResponse) []questionoption.CreateRequest {
+	questionoptions := make([]questionoption.CreateRequest, 0, len(aiAnswers))
 	for _, a := range aiAnswers {
-		questionoptions = append(questionoptions, models.QuestionOption{
-			Text:       a.Text,
-			Is_correct: a.IsCorrect,
-			QuestionID: questionID,
+		questionoptions = append(questionoptions, questionoption.CreateRequest{
+			Text:      a.Text,
+			IsCorrect: a.IsCorrect,
 		})
 	}
 	return questionoptions
 }
 
-func (s *Service) addAIQuestion(aiQuestion AIQuestionResponse) {
-	created, _ := s.questionService.SendQuestions(formatQuestions(aiQuestion))
-	log.Println("Successful Question Insert")
-
-	var questionID uint
-	if len(created) > 0 {
-		questionID = created[0].ID
+func (s *Service) addAIQuestion(aiQuestion AIQuestionResponse) error {
+	created, err := s.questionService.SendQuestions(formatQuestions(aiQuestion))
+	if err != nil {
+		return fmt.Errorf("failed to create generated question: %w", err)
 	}
 
-	questionoptionsPayload := formatQuestionOption(questionID, aiQuestion.Answers...)
-	s.questionOptionRepository.SendQuestionOptions(&questionoptionsPayload)
-	log.Println("Successful QuestionOption Insert")
+	if len(created) == 0 {
+		return fmt.Errorf("question service returned no created question")
+	}
+
+	_, err = s.questionOptionService.CreateQuestionOptions(
+		fmt.Sprint(created[0].ID),
+		formatQuestionOption(aiQuestion.Answers...),
+	)
+	if err != nil {
+		return fmt.Errorf("failed to create generated question options: %w", err)
+	}
+	log.Println("Successful Question and QuestionOption Insert")
+	return nil
 }
 
 func (s *Service) addAIQuestionSet(aiQuestionSet AIQuestionSetResponse) error {
@@ -207,14 +213,14 @@ func (s *Service) addAIQuestionSet(aiQuestionSet AIQuestionSetResponse) error {
 		return errSendQ
 	}
 
-	answers := make([]models.QuestionOption, 0, len(aiQuestionSet.Questions)*4)
 	for i, q := range aiQuestionSet.Questions {
-		answers = append(answers, formatQuestionOption(questions[i].ID, q.Answers...)...)
-	}
-
-	errSendA := s.questionOptionRepository.SendQuestionOptions(&answers)
-	if errSendA != nil {
-		return errSendA
+		_, err := s.questionOptionService.CreateQuestionOptions(
+			fmt.Sprint(questions[i].ID),
+			formatQuestionOption(q.Answers...),
+		)
+		if err != nil {
+			return fmt.Errorf("failed to create generated question options: %w", err)
+		}
 	}
 
 	questionSetQuestion := make([]models.QuestionSetQuestion, 0, len(questions))

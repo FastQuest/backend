@@ -10,18 +10,18 @@ import (
 )
 
 type Handler struct {
-	examRepository          *Repository
-	questionService         question.Service
-	questionOptionRepository *questionoption.Repository
-	questionSetRepository   *questionset.Repository
+	examRepository        *Repository
+	questionService       question.Service
+	questionOptionService questionoption.Service
+	questionSetRepository *questionset.Repository
 }
 
-func NewHandler(examRepository *Repository, questionService question.Service, questionOptionRepository *questionoption.Repository, questionSetRepository *questionset.Repository) *Handler {
+func NewHandler(examRepository *Repository, questionService question.Service, questionOptionService questionoption.Service, questionSetRepository *questionset.Repository) *Handler {
 	return &Handler{
-		examRepository:           examRepository,
-		questionService:          questionService,
-		questionOptionRepository: questionOptionRepository,
-		questionSetRepository:    questionSetRepository,
+		examRepository:        examRepository,
+		questionService:       questionService,
+		questionOptionService: questionOptionService,
+		questionSetRepository: questionSetRepository,
 	}
 }
 
@@ -46,7 +46,7 @@ func (h *Handler) CreateExam(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response, err := CreateExamPayload(h.examRepository, h.questionService, h.questionOptionRepository, h.questionSetRepository, newExam)
+	response, err := CreateExamPayload(h.examRepository, h.questionService, h.questionOptionService, h.questionSetRepository, newExam)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Error creating exam: %v", err), http.StatusInternalServerError)
 		return

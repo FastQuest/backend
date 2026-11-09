@@ -24,7 +24,7 @@ func (r *Repository) SendExamInstance(ei ...*models.ExamInstance) error {
 	return nil
 }
 
-func CreateExamPayload(examRepository *Repository, questionService question.Service, questionOptionRepository *questionoption.Repository, questionSetRepository *questionset.Repository, newExam NewExam) (models.QuestionSetResponse, error) {
+func CreateExamPayload(examRepository *Repository, questionService question.Service, questionOptionService questionoption.Service, questionSetRepository *questionset.Repository, newExam NewExam) (models.QuestionSetResponse, error) {
 	exam := newExam.Exam
 
 	errSendE := examRepository.SendExamInstance(&exam)
@@ -61,20 +61,19 @@ func CreateExamPayload(examRepository *Repository, questionService question.Serv
 		return models.QuestionSetResponse{}, errSendQ
 	}
 
-	questionoptions := make([]models.QuestionOption, 0, len(questions)*4)
 	for i, q := range newExam.List.Questions {
+		questionoptions := make([]questionoption.CreateRequest, 0, len(*q.QuestionOptions))
 		for _, qo := range *q.QuestionOptions {
-			questionoptions = append(questionoptions, models.QuestionOption{
-				Text:       qo.Text,
-				Is_correct: qo.IsCorrect,
-				QuestionID: questions[i].ID,
+			questionoptions = append(questionoptions, questionoption.CreateRequest{
+				Text:      qo.Text,
+				IsCorrect: qo.IsCorrect,
 			})
 		}
-	}
 
-	errSendQO := questionOptionRepository.SendQuestionOptions(&questionoptions)
-	if errSendQO != nil {
-		return models.QuestionSetResponse{}, errSendQO
+		_, errSendQO := questionOptionService.CreateQuestionOptions(fmt.Sprint(questions[i].ID), questionoptions)
+		if errSendQO != nil {
+			return models.QuestionSetResponse{}, errSendQO
+		}
 	}
 
 	questionSetQuestion := make([]models.QuestionSetQuestion, 0, len(questions))
