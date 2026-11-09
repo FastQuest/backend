@@ -6,11 +6,11 @@ import (
 	"testing"
 
 	"flashquest/internal/answer"
+	"flashquest/internal/questionoption"
 	"flashquest/pkg/models"
 )
 
 type stubRepository struct {
-	options    []models.QuestionOption
 	submission *models.Submission
 	err        error
 }
@@ -22,10 +22,6 @@ func (r *stubRepository) CreateSubmission(submission *models.Submission) (*model
 	submission.ID = 17
 	r.submission = submission
 	return submission, nil
-}
-
-func (r *stubRepository) GetQuestionOptionsByIDs([]uint) ([]models.QuestionOption, error) {
-	return r.options, r.err
 }
 
 func (r *stubRepository) GetSubmissionsByUserID(uint, *uint, int, int) ([]models.Submission, int64, error) {
@@ -54,15 +50,33 @@ func (*stubAnswerService) GetOverallPerformance(int) (answer.OverallPerformanceR
 	return answer.OverallPerformanceResponse{}, nil
 }
 
+type stubQuestionOptionService struct {
+	options []questionoption.Response
+	err     error
+}
+
+func (s *stubQuestionOptionService) CreateQuestionOptions(string, []questionoption.CreateRequest) (questionoption.CreateResult, error) {
+	return questionoption.CreateResult{}, nil
+}
+
+func (*stubQuestionOptionService) GetQuestionOptionsByQuestionID(string) ([]questionoption.Response, error) {
+	return nil, nil
+}
+
+func (s *stubQuestionOptionService) GetQuestionOptionsByIDs([]uint) ([]questionoption.Response, error) {
+	return s.options, s.err
+}
+
 func TestCreateSubmissionInjectsAnswerService(t *testing.T) {
-	repo := &stubRepository{
-		options: []models.QuestionOption{
-			{ID: 8, Is_correct: true},
-			{ID: 9, Is_correct: false},
+	repo := &stubRepository{}
+	optionService := &stubQuestionOptionService{
+		options: []questionoption.Response{
+			{ID: 8, IsCorrect: true},
+			{ID: 9, IsCorrect: false},
 		},
 	}
 	answerService := &stubAnswerService{}
-	service := NewService(repo, answerService)
+	service := NewService(repo, answerService, optionService)
 
 	req := CreateSubmissionRequest{QuestionSetID: 4, UserID: 3}
 	req.Answers = []struct {
@@ -93,7 +107,8 @@ func TestCreateSubmissionInjectsAnswerService(t *testing.T) {
 func TestCreateSubmissionReturnsQuestionOptionLookupError(t *testing.T) {
 	repoErr := errors.New("options query failed")
 	answerService := &stubAnswerService{}
-	service := NewService(&stubRepository{err: repoErr}, answerService)
+	optionService := &stubQuestionOptionService{err: repoErr}
+	service := NewService(&stubRepository{}, answerService, optionService)
 
 	_, err := service.CreateSubmissionPayload(CreateSubmissionRequest{})
 	if !errors.Is(err, repoErr) {
@@ -106,7 +121,7 @@ func TestCreateSubmissionReturnsQuestionOptionLookupError(t *testing.T) {
 
 func TestCreateSubmissionRejectsMissingQuestionOption(t *testing.T) {
 	answerService := &stubAnswerService{}
-	service := NewService(&stubRepository{}, answerService)
+	service := NewService(&stubRepository{}, answerService, &stubQuestionOptionService{})
 
 	req := CreateSubmissionRequest{}
 	req.Answers = []struct {
@@ -125,9 +140,10 @@ func TestCreateSubmissionRejectsMissingQuestionOption(t *testing.T) {
 func TestCreateSubmissionReturnsAnswerServiceError(t *testing.T) {
 	answerErr := errors.New("answer persistence failed")
 	answerService := &stubAnswerService{err: answerErr}
-	service := NewService(&stubRepository{
-		options: []models.QuestionOption{{ID: 2, Is_correct: true}},
-	}, answerService)
+	optionService := &stubQuestionOptionService{
+		options: []questionoption.Response{{ID: 2, IsCorrect: true}},
+	}
+	service := NewService(&stubRepository{}, answerService, optionService)
 
 	req := CreateSubmissionRequest{}
 	req.Answers = []struct {

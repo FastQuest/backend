@@ -71,4 +71,16 @@ func TestRoutesWiring(t *testing.T) {
 			t.Fatalf("expected %s %s route to be registered", route.method, route.path)
 		}
 	}
+
+	questionOptionRoutes := []struct{ method, path string }{
+		{http.MethodPost, "/questions/1/question-options"},
+		{http.MethodGet, "/questions/1/question-options"},
+		{http.MethodPost, "/question-options/by-ids"},
+	}
+	for _, route := range questionOptionRoutes {
+		var m mux.RouteMatch
+		if !r.Match(httptest.NewRequest(route.method, route.path, nil), &m) {
+			t.Fatalf("expected %s %s route to be registered", route.method, route.path)
+		}
+	}
 }
