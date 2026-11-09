@@ -1,6 +1,7 @@
 package question
 
 import (
+	"net/url"
 	"strings"
 	"testing"
 
@@ -46,6 +47,8 @@ func TestApplyFiltersBuildsEachClause(t *testing.T) {
 		{"subject", QuestionFilterDTO{Subject: "3"}, []string{`INNER JOIN subject ON subject.id = question.subject_id`, `subject.id = '3'`}},
 		{"topic", QuestionFilterDTO{Topic: "x"}, []string{`topic = 'x'`}},
 		{"source", QuestionFilterDTO{Source: "1"}, []string{`JOIN source_exam_instance ON source_exam_instance.id = question.source_exam_instance_id`, `source_exam_instance.source_id = '1'`}},
+		{"source exam instance", QuestionFilterDTO{SourceExamInstanceID: "2"}, []string{`question.source_exam_instance_id = '2'`}},
+		{"source and instance", QuestionFilterDTO{Source: "1", SourceExamInstanceID: "2"}, []string{`source_exam_instance.source_id = '1'`, `question.source_exam_instance_id = '2'`}},
 		{"year", QuestionFilterDTO{Year: "2024"}, []string{`LEFT JOIN source_exam_instance ON source_exam_instance.id = question.source_exam_instance_id`, `source_exam_instance.year = 2024 OR EXTRACT(YEAR FROM question.created_at) = 2024`}},
 		{"list true", QuestionFilterDTO{List: "true"}, []string{`question_set_id IS NOT NULL`}},
 		{"list false", QuestionFilterDTO{List: "false"}, []string{`question_set_id IS NULL`}},
@@ -60,6 +63,18 @@ func TestApplyFiltersBuildsEachClause(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestParseFilterReadsSourceExamInstanceID(t *testing.T) {
+	query := url.Values{
+		"source":                  {"1"},
+		"source_exam_instance_id": {"2"},
+	}
+
+	got := parseFilter(query)
+	if got.Source != "1" || got.SourceExamInstanceID != "2" {
+		t.Fatalf("unexpected filters: %+v", got)
 	}
 }
 

@@ -32,6 +32,10 @@ func applyFilters(query *gorm.DB, filter QuestionFilterDTO) *gorm.DB {
 			Where("source_exam_instance.source_id = ?", filter.Source)
 	}
 
+	if filter.SourceExamInstanceID != "" {
+		query = query.Where("question.source_exam_instance_id = ?", filter.SourceExamInstanceID)
+	}
+
 	if filter.Year != "" {
 		if yearInt, err := strconv.Atoi(filter.Year); err == nil {
 			query = query.

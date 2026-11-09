@@ -100,14 +100,13 @@ func (h *Handler) CreateQuestionsBatch(w http.ResponseWriter, r *http.Request) {
 // @Param page query int false "Page number" default(1)
 // @Param perPage query int false "Items per page (max 100)" default(10)
 // @Param orderBy query string false "Order by field (e.g., created_at desc)"
-// @Param source query int false "Filter by source ID"
-// @Param source_exam_instance_id query int false "Filter by source exam instance ID"
 // @Param include query string false "Comma-separated list of relations to include (source, question-options, user and subject)"
 // @Param statement query string false "Filter by statement (case insensitive)"
 // @Param question_option query string false "Filter by question option text (case insensitive)"
 // @Param subject query string false "Filter by subject ID"
 // @Param topic query string false "Filter by topic"
-// @Param source query string false "Filter by source ID"
+// @Param source query int false "Filter by source ID"
+// @Param source_exam_instance_id query int false "Filter by source exam instance ID"
 // @Param year query int false "Filter by exam year or creation year"
 // @Param list query bool false "Filter questions that belong (true) or not (false) to a list"
 // @Success 200 {object} map[string]interface{} "Paginated response containing data and pagination metadata"
@@ -273,13 +272,14 @@ func writeCreateError(w http.ResponseWriter, err error) {
 
 func parseFilter(query url.Values) QuestionFilterDTO {
 	return QuestionFilterDTO{
-		Statement:      query.Get("statement"),
-		QuestionOption: query.Get("question_option"),
-		Subject:        query.Get("subject"),
-		Topic:          query.Get("topic"),
-		Source:         query.Get("source"),
-		Year:           query.Get("year"),
-		List:           query.Get("list"),
+		Statement:            query.Get("statement"),
+		QuestionOption:       query.Get("question_option"),
+		Subject:              query.Get("subject"),
+		Topic:                query.Get("topic"),
+		Source:               query.Get("source"),
+		SourceExamInstanceID: query.Get("source_exam_instance_id"),
+		Year:                 query.Get("year"),
+		List:                 query.Get("list"),
 	}
 }
 

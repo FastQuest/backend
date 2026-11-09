@@ -71,13 +71,14 @@ type Response struct {
 // QuestionFilterDTO holds the optional filters of the question listing. An
 // empty field means the filter was not requested.
 type QuestionFilterDTO struct {
-	Statement      string
-	QuestionOption string
-	Subject        string
-	Topic          string
-	Source         string
-	Year           string
-	List           string
+	Statement            string
+	QuestionOption       string
+	Subject              string
+	Topic                string
+	Source               string
+	SourceExamInstanceID string
+	Year                 string
+	List                 string
 }
 
 type FilterItem struct {
