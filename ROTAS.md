@@ -4,6 +4,75 @@
 
 ---
 
+## Inventário de Rotas
+
+Esta seção lista todas as rotas registradas pelo servidor. As rotas marcadas como protegidas exigem autenticação Bearer (JWT).
+
+### Autenticação
+
+| Método | Endpoint | Acesso | Descrição |
+| --- | --- | --- | --- |
+| `POST` | `/api/auth/register` | Público | Registra um usuário. |
+| `POST` | `/api/auth/login` | Público | Autentica um usuário e inicia uma sessão. |
+
+### Questões
+
+| Método | Endpoint | Acesso | Descrição |
+| --- | --- | --- | --- |
+| `POST` | `/questions` | Público | Cria uma questão ou um lote de questões. |
+| `GET` | `/questions` | Público | Lista questões com filtros e paginação. |
+| `GET` | `/questions/filters` | Público | Retorna os filtros disponíveis para questões. |
+| `POST` | `/questions/by-ids` | Público | Busca questões pelos IDs enviados no corpo. |
+| `GET` | `/questions/{id}` | Público | Retorna uma questão pelo ID. |
+| `DELETE` | `/questions/{id}` | Público | Exclui uma questão pelo ID. |
+
+### Opções de Questão
+
+| Método | Endpoint | Acesso | Descrição |
+| --- | --- | --- | --- |
+| `POST` | `/questions/{id}/question-options` | Público | Cria opções para uma questão. |
+| `GET` | `/questions/{id}/question-options` | Público | Lista as opções de uma questão. |
+| `POST` | `/question-options/by-ids` | Público | Busca opções pelos IDs enviados no corpo. |
+
+### Listas de Questões
+
+| Método | Endpoint | Acesso | Descrição |
+| --- | --- | --- | --- |
+| `POST` | `/question-sets` | Público | Cria uma lista de questões. |
+| `GET` | `/question-sets` | Público | Lista listas com filtros e paginação. |
+| `GET` | `/question-sets/{id}` | Público | Retorna uma lista pelo ID. |
+| `GET` | `/question-sets/{id}/questions` | Público | Retorna as questões da lista; use `?fields=id` para obter somente os IDs. |
+
+### Fontes, Exames e IA
+
+| Método | Endpoint | Acesso | Descrição |
+| --- | --- | --- | --- |
+| `POST` | `/sources` | Público | Cria uma fonte de exame. |
+| `POST` | `/exam` | Público | Cria um exame e sua lista de questões. |
+| `POST` | `/ai/gen-question` | Público | Solicita a geração de uma questão por IA. |
+| `POST` | `/ai/gen-questionset` | Público | Gera uma lista de questões por IA. |
+
+### Usuário, Respostas e Submissões
+
+| Método | Endpoint | Acesso | Descrição |
+| --- | --- | --- | --- |
+| `GET` | `/users/me` | Protegido | Retorna o usuário autenticado. |
+| `GET` | `/answers/performance` | Protegido | Retorna o desempenho do usuário por matéria. |
+| `GET` | `/answers/overall-performance` | Protegido | Retorna o desempenho geral do usuário. |
+| `POST` | `/submissions` | Protegido | Cria uma submissão com as respostas do usuário. |
+| `GET` | `/submissions` | Protegido | Lista as submissões do usuário autenticado. |
+| `GET` | `/submissions/{id}` | Protegido | Retorna uma submissão pelo ID. |
+
+### Documentação
+
+| Método | Endpoint | Acesso | Descrição |
+| --- | --- | --- | --- |
+| `GET` | `/swagger/` | Público | Exibe a documentação interativa da API. |
+
+> Não há rotas registradas para `POST` ou `GET /questions/{id}/answers`, nem para `/question-sets/{id}/question-ids`. Para respostas de questões, o projeto disponibiliza submissões e consultas de desempenho; os IDs das questões de uma lista são obtidos em `/question-sets/{id}/questions?fields=id`.
+
+---
+
 ## 📋 Índice
 1. [Questões (Questions)](#questões-questions)
 2. [Opções de Questão (QuestionOptions)](#opções-de-questão-questionoptions)
@@ -117,6 +186,8 @@ Lista todas as questões com suporte a paginação, filtros e includes.
 - `perPage` (default: 10, máximo: 100) - Itens por página
 - `orderBy` (default: "created_at desc") - Ordenação
 - `include` (comma-separated) - Inclui relacionamentos: "question-options", "user", "subject", "source"
+- `source` - Filtra pela fonte de exame (pode incluir questões de qualquer instância dessa fonte)
+- `source_exam_instance_id` - Filtra por uma instância específica da fonte de exame
 - `subject_id` - Filtro por disciplina
 - `user_id` - Filtro por usuário
 
@@ -124,6 +195,9 @@ Lista todas as questões com suporte a paginação, filtros e includes.
 ```
 GET http://localhost:8080/questions
 GET http://localhost:8080/questions?page=1&perPage=5
+GET http://localhost:8080/questions?source=2
+GET http://localhost:8080/questions?source_exam_instance_id=4
+GET http://localhost:8080/questions?source=2&source_exam_instance_id=4
 GET http://localhost:8080/questions?include=question-options,user&subject_id=1
 GET http://localhost:8080/questions?orderBy=id asc&user_id=1
 GET http://localhost:8080/questions?include=question-options,user,subject,source&page=2&perPage=20
@@ -374,15 +448,15 @@ GET http://localhost:8080/questions/1/question-options
 
 ---
 
-### 3. Buscar Respostas por IDs
-**`POST /answers/by-ids`**
+### 3. Buscar Opções por IDs
+**`POST /question-options/by-ids`**
 
-Retorna múltiplas respostas a partir de uma lista de IDs.
+Retorna múltiplas opções de questão a partir de uma lista de IDs.
 
 **Body:**
 ```json
 {
-  "answer_ids": [1, 2, 5, 9]
+  "question_option_ids": [1, 2, 5, 9]
 }
 ```
 
@@ -765,59 +839,48 @@ Gera uma lista completa de exercícios utilizando a API do Gemini (requer GEMINI
 
 ## 🧪 Roteiro Recomendado de Testes
 
-Execute os testes nesta ordem para garantir que tudo funcione corretamente:
+Execute os testes nesta ordem. As etapas de submissão exigem um token Bearer válido.
 
-### 1️⃣ Teste de Criação de Questão
+### 1. Criar Questão
 ```
 POST http://localhost:8080/questions
 ```
 
-### 2️⃣ Teste de Adição de Respostas
-```
-POST http://localhost:8080/questions/1/answers
-```
-
-### 3️⃣ Teste de Listagem de Questões
+### 2. Listar Questões
 ```
 GET http://localhost:8080/questions
-GET http://localhost:8080/questions?include=question-options,user,subject,source
 ```
 
-### 4️⃣ Teste de Busca por ID
+### 3. Buscar Questão por ID
 ```
 GET http://localhost:8080/questions/1?include=question-options
 ```
 
-### 5️⃣ Teste de Busca por Array de IDs
+### 4. Buscar Questões por IDs
 ```
 POST http://localhost:8080/questions/by-ids
 ```
 
-### 6️⃣ Teste de Obtenção de Respostas
-```
-GET http://localhost:8080/questions/1/answers
-```
-
-### 7️⃣ Teste de Criação de Lista
+### 5. Criar e Listar uma Lista de Questões
 ```
 POST http://localhost:8080/question-sets
-```
-
-### 8️⃣ Teste de Listagem de Listas
-```
 GET http://localhost:8080/question-sets
-GET http://localhost:8080/question-sets?include=user,questions
 ```
 
-### 9️⃣ Teste de Obtenção de Lista Específica
-```
-GET http://localhost:8080/question-sets/1?include=user,questions
-```
-
-### 🔟 Teste de Questões da Lista
+### 6. Consultar Questões e IDs da Lista
 ```
 GET http://localhost:8080/question-sets/1/questions
 GET http://localhost:8080/question-sets/1/questions?fields=id
+```
+
+### 7. Enviar uma Submissão (Autenticado)
+```
+POST http://localhost:8080/submissions
+```
+
+### 8. Consultar Submissões (Autenticado)
+```
+GET http://localhost:8080/submissions
 ```
 
 ---

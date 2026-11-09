@@ -27,6 +27,9 @@ var QuestionFilters = map[string]FilterFunc{
 		return qb.Joins("JOIN source_exam_instance ON source_exam_instance.id = question.source_exam_instance_id").
 			Where("source_exam_instance.source_id = ?", value)
 	},
+	"source_exam_instance_id": func(value string, qb *gorm.DB) *gorm.DB {
+		return qb.Where("question.source_exam_instance_id = ?", value)
+	},
 	"year": func(value string, qb *gorm.DB) *gorm.DB {
 		if yearInt, err := strconv.Atoi(value); err == nil {
 			return qb.
