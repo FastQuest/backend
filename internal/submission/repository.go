@@ -1,6 +1,8 @@
 package submission
 
 import (
+	"errors"
+	"flashquest/internal/questionoption"
 	"flashquest/pkg/models"
 	"strings"
 
@@ -15,8 +17,32 @@ func NewRepository(db *gorm.DB) *Repository {
 	return &Repository{db: db}
 }
 
-func (r *Repository) DB() *gorm.DB {
-	return r.db
+func (r *Repository) CreateSubmission(submission *models.Submission) (*models.Submission, error) {
+	if r.db == nil {
+		return nil, errors.New("database connection not established")
+	}
+	return createSubmission(r.db, submission)
+}
+
+func (r *Repository) GetQuestionOptionsByIDs(ids []uint) ([]models.QuestionOption, error) {
+	if r.db == nil {
+		return nil, errors.New("database connection not established")
+	}
+	return questionoption.ReadQuestionOptionsByIDArray(r.db, ids)
+}
+
+func (r *Repository) GetSubmissionsByUserID(userID uint, questionSetID *uint, page, pageSize int) ([]models.Submission, int64, error) {
+	if r.db == nil {
+		return nil, 0, errors.New("database connection not established")
+	}
+	return getSubmissionsByUserID(r.db, userID, questionSetID, page, pageSize)
+}
+
+func (r *Repository) GetSubmissionByID(submissionID uint, includes string) (*models.Submission, error) {
+	if r.db == nil {
+		return nil, errors.New("database connection not established")
+	}
+	return getSubmissionByID(r.db, submissionID, includes)
 }
 
 func createSubmission(db *gorm.DB, submission *models.Submission) (*models.Submission, error) {
