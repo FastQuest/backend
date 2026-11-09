@@ -13,11 +13,11 @@ import (
 )
 
 type Handler struct {
-	repository *Repository
+	service Service
 }
 
-func NewHandler(repository *Repository) *Handler {
-	return &Handler{repository: repository}
+func NewHandler(service Service) *Handler {
+	return &Handler{service: service}
 }
 
 // CreateSubmission godoc
@@ -49,7 +49,7 @@ func (h *Handler) CreateSubmission(w http.ResponseWriter, r *http.Request) {
 	}
 	req.UserID = userID
 
-	submission, err := h.repository.CreateSubmissionPayload(req)
+	submission, err := h.service.CreateSubmissionPayload(req)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Error creating submission: %v", err), http.StatusInternalServerError)
 		return
@@ -108,8 +108,7 @@ func (h *Handler) GetUserSubmissions(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	db := h.repository.DB()
-	submissions, total, err := getSubmissionsByUserID(db, userID, questionSetID, page, pageSize)
+	submissions, total, err := h.service.GetSubmissionsByUserID(userID, questionSetID, page, pageSize)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Error fetching submissions: %v", err), http.StatusInternalServerError)
 		return
@@ -164,8 +163,7 @@ func (h *Handler) GetSubmission(w http.ResponseWriter, r *http.Request) {
 
 	includes := r.URL.Query().Get("include")
 
-	db := h.repository.DB()
-	submission, err := getSubmissionByID(db, uint(id), includes)
+	submission, err := h.service.GetSubmissionByID(uint(id), includes)
 	if err != nil {
 		apiresp.WriteError(w, http.StatusNotFound, "NOT_FOUND", "Submission not found")
 		return
