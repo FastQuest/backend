@@ -1,25 +1,49 @@
 package submission
 
 import (
-	"errors"
 	"flashquest/internal/answer"
-	"flashquest/internal/questionoption"
 	"flashquest/pkg/models"
+	"fmt"
 )
 
-func (r *Repository) CreateSubmissionPayload(req CreateSubmissionRequest) (models.Submission, error) {
+type repository interface {
+	CreateSubmission(submission *models.Submission) (*models.Submission, error)
+	GetQuestionOptionsByIDs(ids []uint) ([]models.QuestionOption, error)
+	GetSubmissionsByUserID(userID uint, questionSetID *uint, page, pageSize int) ([]models.Submission, int64, error)
+	GetSubmissionByID(submissionID uint, includes string) (*models.Submission, error)
+}
+
+type Service interface {
+	CreateSubmissionPayload(req CreateSubmissionRequest) (models.Submission, error)
+	GetSubmissionsByUserID(userID uint, questionSetID *uint, page, pageSize int) ([]models.Submission, int64, error)
+	GetSubmissionByID(submissionID uint, includes string) (*models.Submission, error)
+}
+
+type service struct {
+	repository    repository
+	answerService answer.Service
+}
+
+func NewService(repository repository, answerService answer.Service) Service {
+	return &service{repository: repository, answerService: answerService}
+}
+
+func (s *service) CreateSubmissionPayload(req CreateSubmissionRequest) (models.Submission, error) {
 	optionsIDs := make([]uint, len(req.Answers))
 
 	for i, a := range req.Answers {
 		optionsIDs[i] = uint(a.OptionID)
 	}
 
-	db := r.db
-	if db == nil {
-		return models.Submission{}, errors.New("database connection not established")
+	options, err := s.repository.GetQuestionOptionsByIDs(optionsIDs)
+	if err != nil {
+		return models.Submission{}, err
 	}
 
-	options, _ := questionoption.ReadQuestionOptionsByIDArray(db, optionsIDs)
+	optionsByID := make(map[uint]models.QuestionOption, len(options))
+	for _, option := range options {
+		optionsByID[option.ID] = option
+	}
 
 	submission := models.Submission{
 		QuestionSetID: req.QuestionSetID,
@@ -28,13 +52,17 @@ func (r *Repository) CreateSubmissionPayload(req CreateSubmissionRequest) (model
 		CorrectCount:  0,
 	}
 
-	for _, option := range options {
+	for _, answer := range req.Answers {
+		option, exists := optionsByID[uint(answer.OptionID)]
+		if !exists {
+			return models.Submission{}, fmt.Errorf("question option %d not found", answer.OptionID)
+		}
 		if option.Is_correct {
 			submission.CorrectCount++
 		}
 	}
 
-	createdSubmission, err := createSubmission(db, &submission)
+	createdSubmission, err := s.repository.CreateSubmission(&submission)
 	if err != nil {
 		return models.Submission{}, err
 	}
@@ -45,14 +73,22 @@ func (r *Repository) CreateSubmissionPayload(req CreateSubmissionRequest) (model
 			SubmissionID:     createdSubmission.ID,
 			QuestionOptionID: a.OptionID,
 			QuestionID:       a.QuestionID,
-			IsCorrect:        options[i].Is_correct,
+			IsCorrect:        optionsByID[uint(a.OptionID)].Is_correct,
 		}
 	}
 
-	err = answer.NewService(answer.NewRepository(r.db)).SendAnswers(answers)
+	err = s.answerService.SendAnswers(answers)
 	if err != nil {
 		return models.Submission{}, err
 	}
 
 	return *createdSubmission, nil
+}
+
+func (s *service) GetSubmissionsByUserID(userID uint, questionSetID *uint, page, pageSize int) ([]models.Submission, int64, error) {
+	return s.repository.GetSubmissionsByUserID(userID, questionSetID, page, pageSize)
+}
+
+func (s *service) GetSubmissionByID(submissionID uint, includes string) (*models.Submission, error) {
+	return s.repository.GetSubmissionByID(submissionID, includes)
 }
