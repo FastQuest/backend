@@ -113,10 +113,25 @@ func (s *service) GetQuestionFilters() (*FiltersResponse, error) {
 	}
 
 	return &FiltersResponse{
-		Subjects: toFilterItems(options.Subjects),
-		Sources:  toFilterItems(options.Sources),
-		Years:    options.Years,
+		Subjects:            toFilterItems(options.Subjects),
+		Sources:             toFilterItems(options.Sources),
+		SourceExamInstances: toSourceExamInstanceFilterItems(options.SourceExamInstances),
+		Years:               options.Years,
 	}, nil
+}
+
+func toSourceExamInstanceFilterItems(instances []SourceExamInstanceFilterOption) []SourceExamInstanceFilterItem {
+	items := make([]SourceExamInstanceFilterItem, len(instances))
+	for i, instance := range instances {
+		items[i] = SourceExamInstanceFilterItem{
+			ID:       instance.ID,
+			SourceID: instance.SourceID,
+			Year:     instance.Year,
+			Edition:  instance.Edition,
+			Phase:    instance.Phase,
+		}
+	}
+	return items
 }
 
 func toQuestion(request CreateRequest) Question {

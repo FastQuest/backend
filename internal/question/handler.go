@@ -182,7 +182,7 @@ func (h *Handler) GetQuestion(w http.ResponseWriter, r *http.Request) {
 
 // GetQuestionFilters godoc
 // @Summary Get question filters
-// @Description Retrieve filters for questions.
+// @Description Retrieve subjects, sources, source exam instances, and years available for question filters.
 // @Tags Questions
 // @Accept json
 // @Produce json

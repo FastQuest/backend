@@ -85,10 +85,19 @@ type FilterItem struct {
 	Name string `json:"name"`
 }
 
+type SourceExamInstanceFilterItem struct {
+	ID       uint `json:"id"`
+	SourceID uint `json:"source_id"`
+	Year     uint `json:"year"`
+	Edition  uint `json:"edition"`
+	Phase    uint `json:"phase"`
+}
+
 type FiltersResponse struct {
-	Subjects []FilterItem `json:"subjects"`
-	Sources  []FilterItem `json:"sources"`
-	Years    []int        `json:"years"`
+	Subjects            []FilterItem                   `json:"subjects"`
+	Sources             []FilterItem                   `json:"sources"`
+	SourceExamInstances []SourceExamInstanceFilterItem `json:"source_exam_instances"`
+	Years               []int                          `json:"years"`
 }
 
 type IDsRequest struct {

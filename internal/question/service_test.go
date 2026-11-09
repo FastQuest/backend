@@ -261,8 +261,11 @@ func TestGetQuestionFiltersMapsOptions(t *testing.T) {
 	repo := &stubRepository{getFilterOptionsFn: func() (*FilterOptions, error) {
 		return &FilterOptions{
 			Subjects: []FilterOption{{ID: 1, Name: "Civil"}},
-			Sources:  []FilterOption{},
-			Years:    []int{2024, 2023},
+			Sources:  []FilterOption{{ID: 2, Name: "OAB"}},
+			SourceExamInstances: []SourceExamInstanceFilterOption{
+				{ID: 4, SourceID: 2, Year: 2024, Edition: 41, Phase: 1},
+			},
+			Years: []int{2024, 2023},
 		}, nil
 	}}
 
@@ -272,7 +275,7 @@ func TestGetQuestionFiltersMapsOptions(t *testing.T) {
 	}
 
 	got, _ := json.Marshal(resp)
-	want := `{"subjects":[{"id":1,"name":"Civil"}],"sources":[],"years":[2024,2023]}`
+	want := `{"subjects":[{"id":1,"name":"Civil"}],"sources":[{"id":2,"name":"OAB"}],"source_exam_instances":[{"id":4,"source_id":2,"year":2024,"edition":41,"phase":1}],"years":[2024,2023]}`
 	if string(got) != want {
 		t.Fatalf("unexpected json\nwant %s\ngot  %s", want, got)
 	}

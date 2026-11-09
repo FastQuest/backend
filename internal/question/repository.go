@@ -80,12 +80,21 @@ func (r *gormRepository) GetFilterOptions() (*FilterOptions, error) {
 		return nil, translateError(err)
 	}
 
-	// The sources error is overwritten by the years query below, as it has
-	// always been: a failure there only leaves the sources empty.
-	err = r.db.Table("source_exam_instance").
-		Select("id, edition AS name").
-		Order("edition ASC").
+	err = r.db.Table("source").
+		Select("id, name").
+		Order("name ASC").
 		Scan(&options.Sources).Error
+	if err != nil {
+		return nil, translateError(err)
+	}
+
+	err = r.db.Table("source_exam_instance").
+		Select("id, source_id, year, edition, phase").
+		Order("source_id ASC, year DESC, edition ASC, phase ASC").
+		Scan(&options.SourceExamInstances).Error
+	if err != nil {
+		return nil, translateError(err)
+	}
 
 	err = r.db.Table("source_exam_instance").
 		Distinct("year").

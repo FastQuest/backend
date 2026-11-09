@@ -213,6 +213,29 @@ GET http://localhost:8080/questions?orderBy=id asc&user_id=1
 GET http://localhost:8080/questions?include=question-options,user,subject,source&page=2&perPage=20
 ```
 
+### Filtros disponíveis para questões
+**`GET /questions/filters`**
+
+Retorna as disciplinas, fontes, instâncias de prova e anos disponíveis. Cada item em `source_exam_instances` contém `source_id`, permitindo filtrar as instâncias pela fonte selecionada sem uma chamada adicional.
+
+**Exemplo de resposta (200 OK):**
+```json
+{
+  "subjects": [
+    { "id": 1, "name": "Direito Civil" }
+  ],
+  "sources": [
+    { "id": 2, "name": "OAB" }
+  ],
+  "source_exam_instances": [
+    { "id": 4, "source_id": 2, "year": 2024, "edition": 41, "phase": 1 }
+  ],
+  "years": [2024, 2023]
+}
+```
+
+Use `source_exam_instance_id` em `GET /questions` para filtrar uma instância específica.
+
 **Response (200 OK):**
 ```json
 {

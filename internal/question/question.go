@@ -47,9 +47,18 @@ type FilterOption struct {
 
 // FilterOptions groups every value the question listing can be filtered by.
 type FilterOptions struct {
-	Subjects []FilterOption
-	Sources  []FilterOption
-	Years    []int
+	Subjects            []FilterOption
+	Sources             []FilterOption
+	SourceExamInstances []SourceExamInstanceFilterOption
+	Years               []int
+}
+
+type SourceExamInstanceFilterOption struct {
+	ID       uint
+	SourceID uint
+	Year     uint
+	Edition  uint
+	Phase    uint
 }
 
 // Repository describes the persistence contract of the question domain.
