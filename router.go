@@ -86,10 +86,12 @@ func registerPaths(r *mux.Router, db *gorm.DB) {
 	protectedRouter := r.PathPrefix("/").Subrouter()
 	protectedRouter.Use(auth.RequireAuth)
 
-	submissionHandler := submission.NewHandler(submission.NewRepository(db))
+	answerService := answer.NewService(answer.NewRepository(db))
+	submissionService := submission.NewService(submission.NewRepository(db), answerService)
+	submissionHandler := submission.NewHandler(submissionService)
 	protectedRouter.HandleFunc("/submissions", submissionHandler.CreateSubmission).Methods("POST")
 	protectedRouter.HandleFunc("/submissions", submissionHandler.GetUserSubmissions).Methods("GET")
 	protectedRouter.HandleFunc("/submissions/{id}", submissionHandler.GetSubmission).Methods("GET")
 	user.RegisterRoutes(protectedRouter, db)
-	answer.RegisterRoutes(protectedRouter, db)
+	answer.RegisterRoutes(protectedRouter, answerService)
 }
