@@ -3,35 +3,36 @@ package question
 import (
 	"encoding/json"
 	"errors"
-	"flashquest/pkg/models"
 	"fmt"
 	"io"
 	"log"
 	"math"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/gorilla/mux"
 )
 
+// Handler is the HTTP layer of the question domain. It depends only on the
+// Service interface, never on the database.
 type Handler struct {
-	repository *Repository
+	service Service
 }
 
-func NewHandler(repository *Repository) *Handler {
-	return &Handler{repository: repository}
+func NewHandler(service Service) *Handler {
+	return &Handler{service: service}
 }
 
 // CreateQuestion godoc
-// @Summary Create a new question or multiple questions
-// @Description Creates a single question or a batch of questions based on the provided JSON body (object or array of objects).
+// @Summary Create a new question
+// @Description Creates a single question from the provided JSON object.
 // @Tags Questions
 // @Accept json
 // @Produce json
-// @Param question body QuestionInput true "Single QuestionInput or Array of QuestionInput"
-// @Success 201 {object} models.Question "Successfully created question(s)"
+// @Param question body CreateRequest true "Question to create"
+// @Success 201 {object} CreateResponse "Successfully created question"
 // @Failure 400 {string} string "Invalid request body format or missing fields"
 // @Failure 500 {string} string "Internal server error"
 // @Router /questions [post]
@@ -42,64 +43,52 @@ func (h *Handler) CreateQuestion(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var questionsToProcess []QuestionInput
-	var createdQuestions []models.Question
-
-	var questionArray []QuestionInput
-	errArray := json.Unmarshal(body, &questionArray)
-
-	if errArray == nil && len(questionArray) > 0 {
-		questionsToProcess = questionArray
-	} else {
-		var singleQuestion QuestionInput
-		errSingle := json.Unmarshal(body, &singleQuestion)
-
-		if errSingle == nil && (singleQuestion.Statement != "" || singleQuestion.UserID != 0) {
-			questionsToProcess = []QuestionInput{singleQuestion}
-		} else {
-			http.Error(w, "Invalid request body format: expected single question object or non-empty array of objects", http.StatusBadRequest)
-			return
-		}
-	}
-
-	db := h.repository.DB()
-	if db == nil {
-		http.Error(w, "Database connection not established", http.StatusInternalServerError)
+	var request CreateRequest
+	if err := json.Unmarshal(body, &request); err != nil {
+		http.Error(w, "Invalid request body format: expected a single question object", http.StatusBadRequest)
 		return
 	}
 
-	for _, input := range questionsToProcess {
-		if input.Statement == "" || input.UserID == 0 {
-			if len(questionsToProcess) > 1 {
-				http.Error(w, "One or more questions are missing Statement or User ID in the batch request", http.StatusBadRequest)
-				return
-			}
-			http.Error(w, "Statement and User ID are required", http.StatusBadRequest)
-			return
-		}
-
-		question := models.Question{
-			Statement:            input.Statement,
-			SubjectID:            input.SubjectID,
-			UserID:               input.UserID,
-			CreatedAt:            time.Now(),
-			UpdatedAt:            time.Now(),
-			SourceExamInstanceID: input.SourceExamInstanceID,
-		}
-
-		if err := createQuestion(db, &question); err != nil {
-			http.Error(w, fmt.Sprintf("Error creating question: %v", err), http.StatusInternalServerError)
-			return
-		}
-
-		createdQuestions = append(createdQuestions, question)
+	created, err := h.service.CreateQuestion(request)
+	if err != nil {
+		writeCreateError(w, err)
+		return
 	}
 
-	if len(createdQuestions) == 1 && len(questionsToProcess) == 1 {
-		sendJSON(w, createdQuestions[0], http.StatusCreated)
-	} else {
-		sendJSON(w, createdQuestions, http.StatusCreated)
+	sendJSON(w, created, http.StatusCreated)
+}
+
+// CreateQuestionsBatch godoc
+// @Summary Create multiple questions
+// @Description Creates a batch of questions from the provided JSON array. Questions are created in order and the ones before an invalid or failing question stay created.
+// @Tags Questions
+// @Accept json
+// @Produce json
+// @Param questions body []CreateRequest true "Questions to create"
+// @Success 201 {array} CreateResponse "Successfully created questions"
+// @Failure 400 {string} string "Invalid request body format or missing fields"
+// @Failure 500 {string} string "Internal server error"
+// @Router /questions/batch [post]
+func (h *Handler) CreateQuestionsBatch(w http.ResponseWriter, r *http.Request) {
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, "Failed to read request body", http.StatusInternalServerError)
+		return
 	}
+
+	var requests []CreateRequest
+	if err := json.Unmarshal(body, &requests); err != nil || len(requests) == 0 {
+		http.Error(w, "Invalid request body format: expected a non-empty array of question objects", http.StatusBadRequest)
+		return
+	}
+
+	created, err := h.service.CreateQuestions(requests)
+	if err != nil {
+		writeCreateError(w, err)
+		return
+	}
+
+	sendJSON(w, created, http.StatusCreated)
 }
 
 // GetQuestions godoc
@@ -114,6 +103,13 @@ func (h *Handler) CreateQuestion(w http.ResponseWriter, r *http.Request) {
 // @Param source query int false "Filter by source ID"
 // @Param source_exam_instance_id query int false "Filter by source exam instance ID"
 // @Param include query string false "Comma-separated list of relations to include (source, question-options, user and subject)"
+// @Param statement query string false "Filter by statement (case insensitive)"
+// @Param question_option query string false "Filter by question option text (case insensitive)"
+// @Param subject query string false "Filter by subject ID"
+// @Param topic query string false "Filter by topic"
+// @Param source query string false "Filter by source ID"
+// @Param year query int false "Filter by exam year or creation year"
+// @Param list query bool false "Filter questions that belong (true) or not (false) to a list"
 // @Success 200 {object} map[string]interface{} "Paginated response containing data and pagination metadata"
 // @Failure 500 {string} string "Internal server error"
 // @Router /questions [get]
@@ -130,41 +126,22 @@ func (h *Handler) GetQuestions(w http.ResponseWriter, r *http.Request) {
 		orderBy = "created_at desc"
 	}
 
-	db := h.repository.DB()
-	if db == nil {
-		http.Error(w, "Database connection not established", http.StatusInternalServerError)
-		return
-	}
+	filter := parseFilter(query)
 
-	queryBuilder := h.repository.ApplyFilters(query)
-	queryBuilder = queryBuilder.Order(orderBy)
-
-	total, err := countQuestions(queryBuilder)
+	total, err := h.service.CountQuestions(filter)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Error counting questions: %v", err), http.StatusInternalServerError)
 		return
 	}
 
-	includeParam := query.Get("include")
-	var includes []string
-	if includeParam != "" {
-		includes = strings.Split(includeParam, ",")
-	}
-
-	queryBuilder = queryBuilder.Scopes(models.ApplyQuestionIncludes(includes))
 	offset := (page - 1) * limit
-	questions, err := findQuestions(queryBuilder, offset, limit)
+	questions, err := h.service.GetQuestions(filter, orderBy, parseIncludes(query), offset, limit)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Error fetching questions: %v", err), http.StatusInternalServerError)
 		return
 	}
 
-	var questionsResp []models.QuestionResponse
-	for _, q := range questions {
-		questionsResp = append(questionsResp, q.ToResponse())
-	}
-
-	sendPaginatedResponse(w, questionsResp, total, limit, page)
+	sendPaginatedResponse(w, questions, total, limit, page)
 }
 
 // GetQuestion godoc
@@ -175,7 +152,7 @@ func (h *Handler) GetQuestions(w http.ResponseWriter, r *http.Request) {
 // @Produce json
 // @Param id path string true "Question ID"
 // @Param include query string false "Comma-separated list of relations to include"
-// @Success 200 {object} models.QuestionResponse
+// @Success 200 {object} Response
 // @Failure 400 {string} string "ID parameter is required"
 // @Failure 404 {string} string "Question not found"
 // @Failure 500 {string} string "Internal server error"
@@ -187,22 +164,9 @@ func (h *Handler) GetQuestion(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	query := r.URL.Query()
-	includeParam := query.Get("include")
-	var includes []string
-	if includeParam != "" {
-		includes = strings.Split(includeParam, ",")
-	}
-
-	db := h.repository.DB()
-	if db == nil {
-		http.Error(w, "Database connection not established", http.StatusInternalServerError)
-		return
-	}
-
-	question, err := findQuestionByID(db, id, includes)
+	question, err := h.service.GetQuestion(id, parseIncludes(r.URL.Query()))
 	if err != nil {
-		if errors.Is(err, ErrQuestionNotFound) {
+		if errors.Is(err, ErrNotFound) {
 			http.Error(w, "Question not found", http.StatusNotFound)
 		} else {
 			http.Error(w, fmt.Sprintf("Error fetching question: %v", err), http.StatusInternalServerError)
@@ -211,7 +175,7 @@ func (h *Handler) GetQuestion(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(question.ToResponse()); err != nil {
+	if err := json.NewEncoder(w).Encode(question); err != nil {
 		http.Error(w, "Error encoding response", http.StatusInternalServerError)
 	}
 }
@@ -222,17 +186,11 @@ func (h *Handler) GetQuestion(w http.ResponseWriter, r *http.Request) {
 // @Tags Questions
 // @Accept json
 // @Produce json
-// @Success 200 {object} QuestionFilters
+// @Success 200 {object} FiltersResponse
 // @Failure 500 {string} string "Internal server error"
 // @Router /questions/filters [get]
 func (h *Handler) GetQuestionFiltersHandler(w http.ResponseWriter, r *http.Request) {
-	db := h.repository.DB()
-	if db == nil {
-		http.Error(w, "Database connection not established", http.StatusInternalServerError)
-		return
-	}
-
-	filters, err := h.repository.GetQuestionFilters()
+	filters, err := h.service.GetQuestionFilters()
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Error fetching question filters: %v", err), http.StatusInternalServerError)
 		return
@@ -252,42 +210,24 @@ func (h *Handler) GetQuestionFiltersHandler(w http.ResponseWriter, r *http.Reque
 // @Produce json
 // @Param include query string false "Comma-separated list of relations to include"
 // @Param request body IDsRequest true "Array of question IDs"
-// @Success 200 {array} models.QuestionResponse
+// @Success 200 {array} Response
 // @Failure 400 {string} string "Invalid JSON body or empty IDs array"
 // @Failure 500 {string} string "Internal server error"
 // @Router /questions/by-ids [post]
 func (h *Handler) GetQuestionsByArray(w http.ResponseWriter, r *http.Request) {
-	query := r.URL.Query()
-	includeParam := query.Get("include")
-	var includes []string
-	if includeParam != "" {
-		includes = strings.Split(includeParam, ",")
-	}
-
 	var req IDsRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || len(req.IDs) == 0 {
 		http.Error(w, "Invalid JSON body or empty IDs array", http.StatusBadRequest)
 		return
 	}
 
-	db := h.repository.DB()
-	if db == nil {
-		http.Error(w, "Database connection not established", http.StatusInternalServerError)
-		return
-	}
-
-	questions, err := findQuestionsByIDs(db, req.IDs, includes)
+	questions, err := h.service.GetQuestionsByIDs(req.IDs, parseIncludes(r.URL.Query()))
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Error fetching questions: %v", err), http.StatusInternalServerError)
 		return
 	}
 
-	var questionsResp []models.QuestionResponse
-	for _, q := range questions {
-		questionsResp = append(questionsResp, q.ToResponse())
-	}
-
-	sendJSON(w, questionsResp, http.StatusOK)
+	sendJSON(w, questions, http.StatusOK)
 }
 
 // DeleteQuestion godoc
@@ -307,14 +247,8 @@ func (h *Handler) DeleteQuestion(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	db := h.repository.DB()
-	if db == nil {
-		http.Error(w, "Database connection not established", http.StatusInternalServerError)
-		return
-	}
-
 	log.Printf("Attempting to delete question ID: %s", id)
-	rows, err := deleteQuestionByID(db, id)
+	rows, err := h.service.DeleteQuestion(id)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Error deleting question: %v", err), http.StatusInternalServerError)
 		return
@@ -325,6 +259,36 @@ func (h *Handler) DeleteQuestion(w http.ResponseWriter, r *http.Request) {
 	}
 
 	log.Printf("Question ID %s deleted successfully", id)
+}
+
+// writeCreateError maps the creation errors: validation failures are the
+// client's fault, anything else comes from persistence.
+func writeCreateError(w http.ResponseWriter, err error) {
+	if errors.Is(err, ErrMissingRequiredFields) || errors.Is(err, ErrBatchMissingRequiredFields) {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	http.Error(w, fmt.Sprintf("Error creating question: %v", err), http.StatusInternalServerError)
+}
+
+func parseFilter(query url.Values) QuestionFilterDTO {
+	return QuestionFilterDTO{
+		Statement:      query.Get("statement"),
+		QuestionOption: query.Get("question_option"),
+		Subject:        query.Get("subject"),
+		Topic:          query.Get("topic"),
+		Source:         query.Get("source"),
+		Year:           query.Get("year"),
+		List:           query.Get("list"),
+	}
+}
+
+func parseIncludes(query url.Values) []string {
+	includeParam := query.Get("include")
+	if includeParam == "" {
+		return nil
+	}
+	return strings.Split(includeParam, ",")
 }
 
 func sendJSON(w http.ResponseWriter, data interface{}, statusCode int) {

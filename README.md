@@ -282,6 +282,7 @@ O sistema utiliza **PostgreSQL** com modelo relacional.
 | Método | Endpoint           | Descrição                        |
 | :----- | :----------------- | :------------------------------- |
 | POST   | `/questions`       | Criar nova questão               |
+| POST   | `/questions/batch` | Criar questões em lote           |
 | GET    | `/questions`       | Listar questões                  |
 | POST   | `/questions/array` | Buscar questões por lista de IDs |
 | GET    | `/questions/{id}`  | Buscar questão específica        |

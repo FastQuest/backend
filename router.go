@@ -55,13 +55,7 @@ func registerPaths(r *mux.Router, db *gorm.DB) {
 	auth.RegisterRoutes(r, db)
 
 	// Question Requests
-	questionHandler := question.NewHandler(question.NewRepository(db))
-	r.HandleFunc("/questions", questionHandler.CreateQuestion).Methods("POST") //Updated
-	r.HandleFunc("/questions", questionHandler.GetQuestions).Methods("GET")
-	r.HandleFunc("/questions/filters", questionHandler.GetQuestionFiltersHandler).Methods("GET")
-	r.HandleFunc("/questions/by-ids", questionHandler.GetQuestionsByArray).Methods("POST")
-	r.HandleFunc("/questions/{id}", questionHandler.GetQuestion).Methods("GET")
-	r.HandleFunc("/questions/{id}", questionHandler.DeleteQuestion).Methods("DELETE")
+	question.RegisterRoutes(r, db)
 
 	// QuestionOption Requests
 	questionOptionHandler := questionoption.NewHandler(questionoption.NewRepository(db))
@@ -80,11 +74,11 @@ func registerPaths(r *mux.Router, db *gorm.DB) {
 	r.HandleFunc("/sources", sourceHandler.CreateSource).Methods("POST")
 
 	//AI requests
-	aiHandler := ai.NewHandler(ai.NewService(question.NewRepository(db), questionoption.NewRepository(db), questionset.NewRepository(db)))
+	aiHandler := ai.NewHandler(ai.NewService(question.NewService(question.NewRepository(db)), questionoption.NewRepository(db), questionset.NewRepository(db)))
 	r.HandleFunc("/ai/gen-question", aiHandler.PostAIGenQuestion).Methods("POST")
 	r.HandleFunc("/ai/gen-questionset", aiHandler.PostAIGenQuestionSet).Methods("POST")
 
-	examHandler := exam.NewHandler(exam.NewRepository(db), question.NewRepository(db), questionoption.NewRepository(db), questionset.NewRepository(db))
+	examHandler := exam.NewHandler(exam.NewRepository(db), question.NewService(question.NewRepository(db)), questionoption.NewRepository(db), questionset.NewRepository(db))
 	r.HandleFunc("/exam", examHandler.CreateExam).Methods("POST")
 
 	r.PathPrefix("/swagger/").Handler(httpSwagger.WrapHandler)

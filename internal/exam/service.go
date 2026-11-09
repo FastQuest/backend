@@ -24,7 +24,7 @@ func (r *Repository) SendExamInstance(ei ...*models.ExamInstance) error {
 	return nil
 }
 
-func CreateExamPayload(examRepository *Repository, questionRepository *question.Repository, questionOptionRepository *questionoption.Repository, questionSetRepository *questionset.Repository, newExam NewExam) (models.QuestionSetResponse, error) {
+func CreateExamPayload(examRepository *Repository, questionService question.Service, questionOptionRepository *questionoption.Repository, questionSetRepository *questionset.Repository, newExam NewExam) (models.QuestionSetResponse, error) {
 	exam := newExam.Exam
 
 	errSendE := examRepository.SendExamInstance(&exam)
@@ -46,19 +46,17 @@ func CreateExamPayload(examRepository *Repository, questionRepository *question.
 		return models.QuestionSetResponse{}, errSendQS
 	}
 
-	var questions []models.Question
+	var questionRequests []question.CreateRequest
 	for _, q := range newExam.List.Questions {
-		questions = append(questions, models.Question{
+		questionRequests = append(questionRequests, question.CreateRequest{
 			Statement:            q.Statement,
 			SubjectID:            q.SubjectID,
 			UserID:               1,
-			CreatedAt:            time.Now(),
-			UpdatedAt:            time.Now(),
 			SourceExamInstanceID: &exam.ID,
 		})
 	}
 
-	errSendQ := questionRepository.SendQuestions(sliceutil.PtrSlice(questions)...)
+	questions, errSendQ := questionService.SendQuestions(questionRequests)
 	if errSendQ != nil {
 		return models.QuestionSetResponse{}, errSendQ
 	}
@@ -68,7 +66,7 @@ func CreateExamPayload(examRepository *Repository, questionRepository *question.
 		for _, qo := range *q.QuestionOptions {
 			questionoptions = append(questionoptions, models.QuestionOption{
 				Text:       qo.Text,
-				Is_correct: qo.Is_correct,
+				Is_correct: qo.IsCorrect,
 				QuestionID: questions[i].ID,
 			})
 		}

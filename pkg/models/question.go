@@ -3,8 +3,6 @@ package models
 import (
 	"time"
 
-	"gorm.io/gorm"
-
 	"flashquest/pkg/apiresp"
 )
 
@@ -79,24 +77,6 @@ func (q Question) ToResponse() QuestionResponse {
 	}
 
 	return resp
-}
-
-func ApplyQuestionIncludes(includes []string) func(*gorm.DB) *gorm.DB {
-	return func(db *gorm.DB) *gorm.DB {
-		for _, include := range includes {
-			switch include {
-			case "source":
-				db = db.Preload("SourceExamInstance.Source")
-			case "question-options":
-				db = db.Preload("QuestionOptions")
-			case "user":
-				db = db.Preload("User")
-			case "subject":
-				db = db.Preload("Subject")
-			}
-		}
-		return db
-	}
 }
 
 type QuestionListResponse struct {
