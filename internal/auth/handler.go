@@ -26,9 +26,9 @@ func NewHandler(service Service) *Handler {
 // @Produce      json
 // @Param        request body RegisterRequest true "Registration payload"
 // @Success      200  {object}  AuthResponse "Successfully registered"
-// @Failure      400  {object}  map[string]interface{} "Invalid request payload or validation error"
-// @Failure      409  {object}  map[string]interface{} "Email already in use"
-// @Failure      422  {object}  map[string]interface{} "Email domain not allowed"
+// @Failure      400  {object}  apiresp.ErrorResponse "INVALID_REQUEST / Invalid request payload, or VALIDATION_ERROR / name is required, email is required, invalid email format, or password must be at least 6 characters"
+// @Failure      409  {object}  apiresp.ErrorResponse "EMAIL_ALREADY_EXISTS / Email already in use"
+// @Failure      422  {object}  apiresp.ErrorResponse "ROLE_DOMAIN_NOT_ALLOWED / Email domain not allowed"
 // @Router       /api/auth/register [post]
 func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 	var req RegisterRequest
@@ -62,8 +62,8 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 // @Produce      json
 // @Param        request body LoginRequest true "Login credentials"
 // @Success      200  {object}  AuthResponse "Successfully authenticated"
-// @Failure      400  {object}  map[string]interface{} "Invalid request payload or validation error"
-// @Failure      401  {object}  map[string]interface{} "Invalid email or password"
+// @Failure      400  {object}  apiresp.ErrorResponse "INVALID_REQUEST / Invalid request payload, or VALIDATION_ERROR / validation details"
+// @Failure      401  {object}  apiresp.ErrorResponse "INVALID_CREDENTIALS / Invalid email or password"
 // @Router       /api/auth/login [post]
 func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	var req LoginRequest

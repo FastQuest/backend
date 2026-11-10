@@ -8,11 +8,13 @@ import (
 
 const fallbackErrorResponse = "{\"error\":{\"code\":\"INTERNAL_SERVER_ERROR\",\"message\":\"internal server error\"}}\n"
 
-type errorEnvelope struct {
-	Error struct {
-		Code    string `json:"code"`
-		Message string `json:"message"`
-	} `json:"error"`
+type ErrorResponse struct {
+	Error ErrorDetails `json:"error"`
+}
+
+type ErrorDetails struct {
+	Code    string `json:"code"`
+	Message string `json:"message"`
 }
 
 type paginatedEnvelope struct {
@@ -21,10 +23,12 @@ type paginatedEnvelope struct {
 }
 
 func WriteError(w http.ResponseWriter, status int, code, message string) {
-	resp := errorEnvelope{}
-	resp.Error.Code = code
-	resp.Error.Message = message
-
+	resp := ErrorResponse{
+		Error: ErrorDetails{
+			Code:    code,
+			Message: message,
+		},
+	}
 	writeJSON(w, status, resp)
 }
 
