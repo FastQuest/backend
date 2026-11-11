@@ -6,11 +6,8 @@ import (
 	"flashquest/internal/question"
 	"flashquest/internal/questionoption"
 	"flashquest/internal/questionset"
-	"flashquest/pkg/models"
-	"flashquest/pkg/sliceutil"
 	"fmt"
 	"log"
-	"time"
 
 	"google.golang.org/genai"
 )
@@ -20,14 +17,14 @@ var aiClient *genai.Client
 type Service struct {
 	questionService       question.Service
 	questionOptionService questionoption.Service
-	questionSetRepository *questionset.Repository
+	questionSetService    questionset.Service
 }
 
-func NewService(questionService question.Service, questionOptionService questionoption.Service, questionSetRepository *questionset.Repository) *Service {
+func NewService(questionService question.Service, questionOptionService questionoption.Service, questionSetService questionset.Service) *Service {
 	return &Service{
 		questionService:       questionService,
 		questionOptionService: questionOptionService,
-		questionSetRepository: questionSetRepository,
+		questionSetService:    questionSetService,
 	}
 }
 
@@ -194,27 +191,24 @@ func (s *Service) addAIQuestion(aiQuestion AIQuestionResponse) error {
 }
 
 func (s *Service) addAIQuestionSet(aiQuestionSet AIQuestionSetResponse) error {
-	questionSet := models.QuestionSet{
+	questionSet, err := s.questionSetService.CreateQuestionSet(questionset.NewList{
 		Name:        aiQuestionSet.Name,
 		Description: aiQuestionSet.Description,
-		UserID:      2,
-		CreatedAt:   time.Now(),
-		IsPrivate:   false,
 		Type:        "list",
+		UserID:      2,
+		IsPrivate:   false,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to create generated question set: %w", err)
 	}
 
-	errSendQS := s.questionSetRepository.SendQuestionSets(&questionSet)
-	if errSendQS != nil {
-		return errSendQS
-	}
-
-	questions, errSendQ := s.questionService.SendQuestions(formatQuestions(aiQuestionSet.Questions...))
-	if errSendQ != nil {
-		return errSendQ
+	questions, err := s.questionService.SendQuestions(formatQuestions(aiQuestionSet.Questions...))
+	if err != nil {
+		return fmt.Errorf("failed to create generated questions: %w", err)
 	}
 
 	for i, q := range aiQuestionSet.Questions {
-		_, err := s.questionOptionService.CreateQuestionOptions(
+		_, err = s.questionOptionService.CreateQuestionOptions(
 			fmt.Sprint(questions[i].ID),
 			formatQuestionOption(q.Answers...),
 		)
@@ -223,18 +217,12 @@ func (s *Service) addAIQuestionSet(aiQuestionSet AIQuestionSetResponse) error {
 		}
 	}
 
-	questionSetQuestion := make([]models.QuestionSetQuestion, 0, len(questions))
+	questionIDs := make([]uint, len(questions))
 	for i, q := range questions {
-		questionSetQuestion = append(questionSetQuestion, models.QuestionSetQuestion{
-			QuestionSetID: questionSet.ID,
-			QuestionID:    int(q.ID),
-			Position:      i + 1,
-		})
+		questionIDs[i] = q.ID
 	}
-
-	errSendQSQ := s.questionSetRepository.SendQuestionSetQuestionInternal(sliceutil.PtrSlice(questionSetQuestion)...)
-	if errSendQSQ != nil {
-		return errSendQSQ
+	if err := s.questionSetService.AddQuestionsToSet(questionSet.ID, questionIDs); err != nil {
+		return fmt.Errorf("failed to link generated questions to question set: %w", err)
 	}
 
 	return nil

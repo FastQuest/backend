@@ -6,9 +6,7 @@ import (
 	"flashquest/internal/questionoption"
 	"flashquest/internal/questionset"
 	"flashquest/pkg/models"
-	"flashquest/pkg/sliceutil"
 	"fmt"
-	"time"
 )
 
 func (r *Repository) SendExamInstance(ei ...*models.ExamInstance) error {
@@ -24,26 +22,23 @@ func (r *Repository) SendExamInstance(ei ...*models.ExamInstance) error {
 	return nil
 }
 
-func CreateExamPayload(examRepository *Repository, questionService question.Service, questionOptionService questionoption.Service, questionSetRepository *questionset.Repository, newExam NewExam) (models.QuestionSetResponse, error) {
+func CreateExamPayload(examRepository *Repository, questionService question.Service, questionOptionService questionoption.Service, questionSetService questionset.Service, newExam NewExam) (questionset.Response, error) {
 	exam := newExam.Exam
 
 	errSendE := examRepository.SendExamInstance(&exam)
 	if errSendE != nil {
-		return models.QuestionSetResponse{}, errSendE
+		return questionset.Response{}, errSendE
 	}
 
-	questionSet := models.QuestionSet{
+	questionSet, err := questionSetService.CreateQuestionSet(questionset.NewList{
 		Name:        newExam.List.Name,
 		Description: newExam.List.Description,
-		UserID:      1,
-		CreatedAt:   time.Now(),
-		IsPrivate:   false,
 		Type:        "list",
-	}
-
-	errSendQS := questionSetRepository.SendQuestionSets(&questionSet)
-	if errSendQS != nil {
-		return models.QuestionSetResponse{}, errSendQS
+		UserID:      1,
+		IsPrivate:   false,
+	})
+	if err != nil {
+		return questionset.Response{}, err
 	}
 
 	var questionRequests []question.CreateRequest
@@ -58,37 +53,34 @@ func CreateExamPayload(examRepository *Repository, questionService question.Serv
 
 	questions, errSendQ := questionService.SendQuestions(questionRequests)
 	if errSendQ != nil {
-		return models.QuestionSetResponse{}, errSendQ
+		return questionset.Response{}, errSendQ
 	}
 
 	for i, q := range newExam.List.Questions {
-		questionoptions := make([]questionoption.CreateRequest, 0, len(*q.QuestionOptions))
-		for _, qo := range *q.QuestionOptions {
-			questionoptions = append(questionoptions, questionoption.CreateRequest{
-				Text:      qo.Text,
-				IsCorrect: qo.IsCorrect,
-			})
+		var questionoptions []questionoption.CreateRequest
+		if q.QuestionOptions != nil {
+			questionoptions = make([]questionoption.CreateRequest, 0, len(*q.QuestionOptions))
+			for _, qo := range *q.QuestionOptions {
+				questionoptions = append(questionoptions, questionoption.CreateRequest{
+					Text:      qo.Text,
+					IsCorrect: qo.IsCorrect,
+				})
+			}
 		}
 
 		_, errSendQO := questionOptionService.CreateQuestionOptions(fmt.Sprint(questions[i].ID), questionoptions)
 		if errSendQO != nil {
-			return models.QuestionSetResponse{}, errSendQO
+			return questionset.Response{}, errSendQO
 		}
 	}
 
-	questionSetQuestion := make([]models.QuestionSetQuestion, 0, len(questions))
+	questionIDs := make([]uint, len(questions))
 	for i, q := range questions {
-		questionSetQuestion = append(questionSetQuestion, models.QuestionSetQuestion{
-			QuestionSetID: questionSet.ID,
-			QuestionID:    int(q.ID),
-			Position:      i + 1,
-		})
+		questionIDs[i] = q.ID
+	}
+	if err := questionSetService.AddQuestionsToSet(questionSet.ID, questionIDs); err != nil {
+		return questionset.Response{}, err
 	}
 
-	errSendQSQ := questionSetRepository.SendQuestionSetQuestionInternal(sliceutil.PtrSlice(questionSetQuestion)...)
-	if errSendQSQ != nil {
-		return models.QuestionSetResponse{}, errSendQSQ
-	}
-
-	return questionSet.ToResponse(), nil
+	return questionSet, nil
 }
