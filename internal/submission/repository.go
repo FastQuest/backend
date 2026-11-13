@@ -2,95 +2,68 @@ package submission
 
 import (
 	"errors"
-	"flashquest/pkg/models"
 	"strings"
 
 	"gorm.io/gorm"
 )
 
-type Repository struct {
+type gormRepository struct {
 	db *gorm.DB
 }
 
-func NewRepository(db *gorm.DB) *Repository {
-	return &Repository{db: db}
+func NewRepository(db *gorm.DB) Repository {
+	return &gormRepository{db: db}
 }
 
-func (r *Repository) CreateSubmission(submission *models.Submission) (*models.Submission, error) {
+func (r *gormRepository) CreateSubmission(submission *Submission) (*Submission, error) {
 	if r.db == nil {
 		return nil, errors.New("database connection not established")
 	}
-	return createSubmission(r.db, submission)
-}
-
-func (r *Repository) GetSubmissionsByUserID(userID uint, questionSetID *uint, page, pageSize int) ([]models.Submission, int64, error) {
-	if r.db == nil {
-		return nil, 0, errors.New("database connection not established")
-	}
-	return getSubmissionsByUserID(r.db, userID, questionSetID, page, pageSize)
-}
-
-func (r *Repository) GetSubmissionByID(submissionID uint, includes string) (*models.Submission, error) {
-	if r.db == nil {
-		return nil, errors.New("database connection not established")
-	}
-	return getSubmissionByID(r.db, submissionID, includes)
-}
-
-func createSubmission(db *gorm.DB, submission *models.Submission) (*models.Submission, error) {
-	result := db.Create(submission)
-	if result.Error != nil {
-		return nil, result.Error
+	if err := r.db.Create(submission).Error; err != nil {
+		return nil, err
 	}
 	return submission, nil
 }
 
-func getSubmissionsByUserID(db *gorm.DB, userID uint, questionSetID *uint, page, pageSize int) ([]models.Submission, int64, error) {
-	var submissions []models.Submission
+func (r *gormRepository) GetSubmissionsByUserID(userID uint, questionSetID *uint, page, pageSize int) ([]Submission, int64, error) {
+	if r.db == nil {
+		return nil, 0, errors.New("database connection not established")
+	}
+
+	var submissions []Submission
 	var total int64
-
-	query := db.Where("user_id = ?", userID)
-
+	query := r.db.Where("user_id = ?", userID)
 	if questionSetID != nil {
 		query = query.Where("question_set_id = ?", *questionSetID)
 	}
-
-	// Count total records
-	if err := query.Model(&models.Submission{}).Count(&total).Error; err != nil {
+	if err := query.Model(&Submission{}).Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
 
-	// Apply pagination
 	offset := (page - 1) * pageSize
 	if err := query.Offset(offset).Limit(pageSize).Order("created_at DESC").Find(&submissions).Error; err != nil {
 		return nil, 0, err
 	}
-
 	return submissions, total, nil
 }
 
-func getSubmissionByID(db *gorm.DB, submissionID uint, includes string) (*models.Submission, error) {
-	var submission models.Submission
-
-	query := db.Where("id = ?", submissionID)
-
-	// Parse includes parameter
-	if includes != "" {
-		includeList := strings.Split(includes, ",")
-		for _, inc := range includeList {
-			inc = strings.TrimSpace(inc)
-			switch inc {
-			case "user":
-				query = query.Preload("User")
-			case "answers":
-				query = query.Preload("Answers")
-			}
-		}
+func (r *gormRepository) GetSubmissionByID(submissionID uint, includes string) (*Submission, error) {
+	if r.db == nil {
+		return nil, errors.New("database connection not established")
 	}
 
+	var submission Submission
+	query := r.db.Where("id = ?", submissionID)
+	for _, include := range strings.Split(includes, ",") {
+		switch strings.TrimSpace(include) {
+		case "user":
+			query = query.Preload("User")
+		case "answers":
+			query = query.Preload("Answers")
+		}
+	}
 	if err := query.First(&submission).Error; err != nil {
 		return nil, err
 	}
-
 	return &submission, nil
 }

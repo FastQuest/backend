@@ -2,6 +2,7 @@ package submission
 
 import (
 	"encoding/json"
+	"errors"
 	"flashquest/internal/appcontext"
 	"flashquest/pkg/apiresp"
 	"fmt"
@@ -27,8 +28,9 @@ func NewHandler(service Service) *Handler {
 // @Accept json
 // @Produce json
 // @Param submission body CreateSubmissionRequest true "Submission with user answers"
-// @Success 200 {object} map[string]interface{} "Successfully created submission"
+// @Success 200 {object} Response "Successfully created submission"
 // @Failure 400 {string} string "Invalid JSON body or request format"
+// @Failure 404 {string} string "Question set not found"
 // @Failure 500 {string} string "Internal server error"
 // @Security BearerAuth
 // @Router /submissions [post]
@@ -38,7 +40,6 @@ func (h *Handler) CreateSubmission(w http.ResponseWriter, r *http.Request) {
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
 		http.Error(w, "Invalid JSON body", http.StatusBadRequest)
-		println(err.Error())
 		return
 	}
 
@@ -51,12 +52,15 @@ func (h *Handler) CreateSubmission(w http.ResponseWriter, r *http.Request) {
 
 	submission, err := h.service.CreateSubmissionPayload(req)
 	if err != nil {
+		if errors.Is(err, ErrQuestionSetNotFound) {
+			http.Error(w, "Question set not found", http.StatusNotFound)
+			return
+		}
 		http.Error(w, fmt.Sprintf("Error creating submission: %v", err), http.StatusInternalServerError)
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(submission)
+	writeJSON(w, submission, http.StatusOK)
 }
 
 // GetUserSubmissions godoc
@@ -68,7 +72,7 @@ func (h *Handler) CreateSubmission(w http.ResponseWriter, r *http.Request) {
 // @Param question_set_id query integer false "Filter by question set ID"
 // @Param page query integer false "Page number (default: 1)"
 // @Param perPage query integer false "Items per page (default: 10, max: 100)"
-// @Success 200 {object} map[string]interface{} "Successfully retrieved submissions"
+// @Success 200 {object} ListResponse "Successfully retrieved submissions"
 // @Failure 401 {string} string "Unauthorized"
 // @Failure 500 {string} string "Internal server error"
 // @Security BearerAuth
@@ -114,18 +118,17 @@ func (h *Handler) GetUserSubmissions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response := map[string]interface{}{
-		"data": submissions,
-		"pagination": map[string]interface{}{
-			"total":        total,
-			"per_page":     pageSize,
-			"current_page": page,
-			"last_page":    int(math.Ceil(float64(total) / float64(pageSize))),
+	response := ListResponse{
+		Data: submissions,
+		Pagination: PaginationResponse{
+			Total:       total,
+			PerPage:     pageSize,
+			CurrentPage: page,
+			LastPage:    int(math.Ceil(float64(total) / float64(pageSize))),
 		},
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
+	writeJSON(w, response, http.StatusOK)
 }
 
 // GetSubmission godoc
@@ -136,7 +139,7 @@ func (h *Handler) GetUserSubmissions(w http.ResponseWriter, r *http.Request) {
 // @Produce json
 // @Param id path integer true "Submission ID"
 // @Param include query string false "Comma-separated includes (user, answers)"
-// @Success 200 {object} map[string]interface{} "Successfully retrieved submission"
+// @Success 200 {object} Response "Successfully retrieved submission"
 // @Failure 401 {string} string "Unauthorized"
 // @Failure 404 {string} string "Submission not found"
 // @Failure 500 {string} string "Internal server error"
@@ -174,6 +177,13 @@ func (h *Handler) GetSubmission(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	writeJSON(w, submission, http.StatusOK)
+}
+
+func writeJSON(w http.ResponseWriter, payload any, status int) {
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(submission)
+	w.WriteHeader(status)
+	if err := json.NewEncoder(w).Encode(payload); err != nil {
+		http.Error(w, "Error encoding response", http.StatusInternalServerError)
+	}
 }
