@@ -5,11 +5,11 @@ import (
 	"flashquest/internal/question"
 	"flashquest/internal/questionoption"
 	"flashquest/internal/questionset"
-	"flashquest/pkg/models"
+	"flashquest/internal/source"
 	"fmt"
 )
 
-func (r *Repository) SendExamInstance(ei ...*models.ExamInstance) error {
+func (r *Repository) SendExamInstance(ei ...*source.ExamInstance) error {
 	db := r.db
 	if db == nil {
 		return errors.New("database connection not established")

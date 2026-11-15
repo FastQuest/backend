@@ -2,10 +2,10 @@ package exam
 
 import (
 	"flashquest/internal/questionset"
-	"flashquest/pkg/models"
+	"flashquest/internal/source"
 )
 
 type NewExam struct {
-	Exam models.ExamInstance              `json:"exam"`
+	Exam source.ExamInstance              `json:"exam"`
 	List questionset.NewListWithQuestions `json:"list"`
 }

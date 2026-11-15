@@ -2,7 +2,7 @@ package exam
 
 import (
 	"errors"
-	"flashquest/pkg/models"
+	"flashquest/internal/source"
 
 	"gorm.io/gorm"
 )
@@ -15,13 +15,13 @@ func NewRepository(db *gorm.DB) *Repository {
 	return &Repository{db: db}
 }
 
-func (r *Repository) GetInstanceWithSource(eiID int, ei *models.ExamInstance) error {
+func (r *Repository) GetInstanceWithSource(eiID int, ei *source.ExamInstance) error {
 	db := r.db
 	if db == nil {
 		return errors.New("database connection not established")
 	}
 
-	result := db.Preload("SourceExamInstance.Source").Where("id = ?", eiID).Find(&ei)
+	result := db.Preload("Source").Where("id = ?", eiID).Find(ei)
 
 	if result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
@@ -32,4 +32,3 @@ func (r *Repository) GetInstanceWithSource(eiID int, ei *models.ExamInstance) er
 
 	return nil
 }
-

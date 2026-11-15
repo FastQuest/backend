@@ -2,10 +2,8 @@ package source
 
 import (
 	"encoding/json"
-	"flashquest/pkg/models"
 	"fmt"
 	"net/http"
-
 )
 
 type Handler struct {
@@ -22,13 +20,13 @@ func NewHandler(repository *Repository) *Handler {
 // @Tags Sources
 // @Accept json
 // @Produce json
-// @Param source body models.SourceExamBody true "Source and Exam Instance details (name, type, edition, phase, year)"
+// @Param source body SourceExamBody true "Source and Exam Instance details (name, type, edition, phase, year)"
 // @Success 201 {object} map[string]interface{} "Successfully created with id of the source"
 // @Failure 400 {string} string "Invalid request body or missing required fields (name and year are mandatory)"
 // @Failure 500 {string} string "Internal server error or database transaction failure"
 // @Router /sources [post]
 func (h *Handler) CreateSource(w http.ResponseWriter, r *http.Request) {
-	var body models.SourceExamBody
+	var body SourceExamBody
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
