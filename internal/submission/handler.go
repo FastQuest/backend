@@ -23,7 +23,7 @@ func NewHandler(service Service) *Handler {
 
 // CreateSubmission godoc
 // @Summary Create a new submission
-// @Description Creates a new submission with user answers for a question set
+// @Description Creates a submission with answers. Set activity_id to submit against an active classroom activity.
 // @Tags Submissions
 // @Accept json
 // @Produce json
@@ -54,6 +54,22 @@ func (h *Handler) CreateSubmission(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		if errors.Is(err, ErrQuestionSetNotFound) {
 			http.Error(w, "Question set not found", http.StatusNotFound)
+			return
+		}
+		if errors.Is(err, ErrActivityForbidden) {
+			apiresp.WriteError(w, http.StatusForbidden, "FORBIDDEN", err.Error())
+			return
+		}
+		if errors.Is(err, ErrActivityNotFound) {
+			apiresp.WriteError(w, http.StatusNotFound, "NOT_FOUND", err.Error())
+			return
+		}
+		if errors.Is(err, ErrInvalidActivitySubmission) {
+			apiresp.WriteError(w, http.StatusBadRequest, "INVALID_ACTIVITY_SUBMISSION", err.Error())
+			return
+		}
+		if errors.Is(err, ErrInvalidSubmission) {
+			apiresp.WriteError(w, http.StatusBadRequest, "INVALID_SUBMISSION", err.Error())
 			return
 		}
 		http.Error(w, fmt.Sprintf("Error creating submission: %v", err), http.StatusInternalServerError)

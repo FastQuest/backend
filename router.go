@@ -8,6 +8,7 @@ import (
 	"flashquest/internal/ai"
 	"flashquest/internal/answer"
 	"flashquest/internal/auth"
+	"flashquest/internal/classroom"
 	"flashquest/internal/exam"
 	"flashquest/internal/question"
 	"flashquest/internal/questionoption"
@@ -84,7 +85,9 @@ func registerPaths(r *mux.Router, db *gorm.DB) {
 	protectedRouter.Use(auth.RequireAuth)
 
 	answerService := answer.NewService(answer.NewRepository(db))
-	submissionService := submission.NewService(submission.NewRepository(db), answerService, questionOptionService, questionSetService)
+	classroomService := classroom.NewService(classroom.NewRepository(db), db)
+	classroom.RegisterRoutes(protectedRouter, classroomService)
+	submissionService := submission.NewService(submission.NewRepository(db), questionOptionService, questionSetService, classroomService)
 	submission.RegisterRoutes(protectedRouter, submissionService)
 	user.RegisterRoutes(protectedRouter, db)
 	answer.RegisterRoutes(protectedRouter, answerService)

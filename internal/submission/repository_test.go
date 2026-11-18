@@ -3,6 +3,7 @@ package submission
 import (
 	"testing"
 
+	"flashquest/internal/answer"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -13,6 +14,7 @@ func TestGormRepositoryPreloadsSubmissionIncludes(t *testing.T) {
 	if err != nil {
 		t.Fatalf("open sqlite database: %v", err)
 	}
+
 	if err := db.AutoMigrate(&User{}, &Submission{}, &Answer{}); err != nil {
 		t.Fatalf("migrate submission models: %v", err)
 	}
@@ -58,5 +60,37 @@ func TestGormRepositoryPreloadsSubmissionIncludes(t *testing.T) {
 	}
 	if total != 1 || len(submissions) != 1 || submissions[0].ID != created.ID {
 		t.Fatalf("unexpected submission list: total=%d submissions=%#v", total, submissions)
+	}
+}
+
+func TestCreateSubmissionWithAnswersRollsBackTogether(t *testing.T) {
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{Logger: logger.Default.LogMode(logger.Silent)})
+	if err != nil {
+		t.Fatalf("open sqlite database: %v", err)
+	}
+	if err := db.AutoMigrate(&User{}, &Submission{}, &Answer{}); err != nil {
+		t.Fatalf("migrate submission models: %v", err)
+	}
+	user := User{Name: "Learner", Email: "learner@example.com"}
+	if err := db.Create(&user).Error; err != nil {
+		t.Fatalf("create user: %v", err)
+	}
+	if err := db.Exec(`CREATE TRIGGER reject_answer BEFORE INSERT ON answer BEGIN SELECT RAISE(FAIL, 'answer rejected'); END`).Error; err != nil {
+		t.Fatalf("create answer trigger: %v", err)
+	}
+
+	submission := &Submission{UserID: user.ID, QuestionSetID: 8, AnswersCount: 1}
+	_, err = NewRepository(db).CreateSubmissionWithAnswers(submission, []answer.Answer{{
+		QuestionID: 12, QuestionOptionID: 34, IsCorrect: true,
+	}})
+	if err == nil {
+		t.Fatal("expected answer persistence to fail")
+	}
+	var count int64
+	if err := db.Model(&Submission{}).Count(&count).Error; err != nil {
+		t.Fatalf("count submissions: %v", err)
+	}
+	if count != 0 {
+		t.Fatalf("expected submission to roll back with failed answer, got %d rows", count)
 	}
 }

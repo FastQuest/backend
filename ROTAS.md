@@ -57,11 +57,20 @@ Esta seção lista todas as rotas registradas pelo servidor. As rotas marcadas c
 | Método | Endpoint | Acesso | Descrição |
 | --- | --- | --- | --- |
 | `GET` | `/users/me` | Protegido | Retorna o usuário autenticado. |
+| `POST` | `/classrooms` | Professor/Admin | Cria uma turma. |
+| `GET` | `/classrooms` | Protegido | Lista turmas do usuário autenticado (criadas ou com participação ativa). |
+| `PUT` | `/classrooms/{id}/status` | Responsável/Admin | Ativa ou arquiva uma turma (`active` ou `archived`). |
+| `POST` | `/classrooms/{id}/participants` | Responsável/Admin | Adiciona um usuário como participante da turma. |
+| `GET` | `/classrooms/{id}/participants` | Responsável/Admin | Lista participantes da turma. |
+| `POST` | `/classrooms/{id}/activities` | Responsável/Admin | Cria atividade e congela a lista em uma versão imutável. |
+| `GET` | `/classrooms/{id}/activities` | Responsável/participante ativo | Lista atividades com questões e alternativas congeladas, sem expor o gabarito. |
 | `GET` | `/answers/performance` | Protegido | Retorna o desempenho do usuário por matéria. |
 | `GET` | `/answers/overall-performance` | Protegido | Retorna o desempenho geral do usuário. |
 | `POST` | `/submissions` | Protegido | Cria uma submissão com as respostas do usuário. |
 | `GET` | `/submissions` | Protegido | Lista as submissões do usuário autenticado. |
 | `GET` | `/submissions/{id}` | Protegido | Retorna uma submissão pelo ID. |
+
+Para submeter a uma atividade, inclua `activity_id` no corpo de `POST /submissions`. O usuário deve ser participante ativo; a lista e as opções são validadas contra o snapshot associado à atividade. Sem `activity_id`, a submissão continua sendo independente e não é contabilizada para nenhuma atividade.
 
 ### Documentação
 

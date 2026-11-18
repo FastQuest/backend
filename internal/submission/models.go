@@ -10,8 +10,9 @@ type Submission struct {
 	ID            uint `gorm:"primaryKey"`
 	UserID        uint `gorm:"not null"`
 	QuestionSetID uint `gorm:"not null"`
-	CorrectCount  int  `gorm:"not null"`
-	AnswersCount  int  `gorm:"not null"`
+	ActivityID    *uint
+	CorrectCount  int `gorm:"not null"`
+	AnswersCount  int `gorm:"not null"`
 	CreatedAt     time.Time
 	UpdatedAt     time.Time
 	DeletedAt     gorm.DeletedAt `gorm:"index"`

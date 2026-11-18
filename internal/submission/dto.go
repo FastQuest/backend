@@ -9,6 +9,7 @@ type AnswerRequest struct {
 
 type CreateSubmissionRequest struct {
 	QuestionSetID uint            `json:"question_set_id"`
+	ActivityID    *uint           `json:"activity_id,omitempty"`
 	UserID        uint            `json:"-"`
 	Answers       []AnswerRequest `json:"answers"`
 }
@@ -33,6 +34,7 @@ type Response struct {
 	ID            uint             `json:"id"`
 	UserID        uint             `json:"user_id"`
 	QuestionSetID uint             `json:"question_set_id"`
+	ActivityID    *uint            `json:"activity_id,omitempty"`
 	CorrectCount  int              `json:"correct_count"`
 	AnswersCount  int              `json:"answers_count"`
 	CreatedAt     time.Time        `json:"created_at"`

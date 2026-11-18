@@ -4,6 +4,7 @@ import (
 	"errors"
 	"strings"
 
+	"flashquest/internal/answer"
 	"gorm.io/gorm"
 )
 
@@ -20,6 +21,30 @@ func (r *gormRepository) CreateSubmission(submission *Submission) (*Submission, 
 		return nil, errors.New("database connection not established")
 	}
 	if err := r.db.Create(submission).Error; err != nil {
+		return nil, err
+	}
+	return submission, nil
+}
+
+func (r *gormRepository) CreateSubmissionWithAnswers(submission *Submission, answers []answer.Answer) (*Submission, error) {
+	if r.db == nil {
+		return nil, errors.New("database connection not established")
+	}
+	err := r.db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Create(submission).Error; err != nil {
+			return err
+		}
+		for i := range answers {
+			answers[i].SubmissionID = submission.ID
+		}
+		if len(answers) > 0 {
+			if err := tx.Create(&answers).Error; err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	if err != nil {
 		return nil, err
 	}
 	return submission, nil
