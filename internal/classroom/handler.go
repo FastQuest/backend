@@ -1,0 +1,195 @@
+package classroom
+
+import (
+	"encoding/json"
+	"errors"
+	"net/http"
+	"strconv"
+
+	"flashquest/internal/appcontext"
+	"flashquest/pkg/apiresp"
+
+	"github.com/gorilla/mux"
+)
+
+type Handler struct{ service Service }
+
+func NewHandler(service Service) *Handler { return &Handler{service: service} }
+
+func (h *Handler) CreateClassroom(w http.ResponseWriter, r *http.Request) {
+	var request CreateClassroomRequest
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		apiresp.WriteError(w, http.StatusBadRequest, "BAD_REQUEST", "Invalid JSON body")
+		return
+	}
+	userID, role, ok := authContext(w, r)
+	if !ok {
+		return
+	}
+	response, err := h.service.CreateClassroom(userID, role, request.Name)
+	if err != nil {
+		writeDomainError(w, err)
+		return
+	}
+	writeJSON(w, response, http.StatusCreated)
+}
+
+func (h *Handler) ListClassrooms(w http.ResponseWriter, r *http.Request) {
+	userID, _, ok := authContext(w, r)
+	if !ok {
+		return
+	}
+	response, err := h.service.ListClassrooms(userID)
+	if err != nil {
+		writeDomainError(w, err)
+		return
+	}
+	writeJSON(w, response, http.StatusOK)
+}
+
+func (h *Handler) UpdateClassroomStatus(w http.ResponseWriter, r *http.Request) {
+	var request UpdateClassroomStatusRequest
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		apiresp.WriteError(w, http.StatusBadRequest, "BAD_REQUEST", "Invalid JSON body")
+		return
+	}
+	userID, role, ok := authContext(w, r)
+	if !ok {
+		return
+	}
+	classroomID, ok := pathID(w, r, "id")
+	if !ok {
+		return
+	}
+	if err := h.service.UpdateClassroomStatus(userID, role, classroomID, request.Status); err != nil {
+		writeDomainError(w, err)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *Handler) AddParticipant(w http.ResponseWriter, r *http.Request) {
+	var request AddParticipantRequest
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		apiresp.WriteError(w, http.StatusBadRequest, "BAD_REQUEST", "Invalid JSON body")
+		return
+	}
+	userID, role, ok := authContext(w, r)
+	if !ok {
+		return
+	}
+	classroomID, ok := pathID(w, r, "id")
+	if !ok {
+		return
+	}
+	response, err := h.service.AddParticipant(userID, role, classroomID, request.UserID)
+	if err != nil {
+		writeDomainError(w, err)
+		return
+	}
+	writeJSON(w, response, http.StatusCreated)
+}
+
+func (h *Handler) ListParticipants(w http.ResponseWriter, r *http.Request) {
+	userID, role, ok := authContext(w, r)
+	if !ok {
+		return
+	}
+	classroomID, ok := pathID(w, r, "id")
+	if !ok {
+		return
+	}
+	response, err := h.service.ListParticipants(userID, role, classroomID)
+	if err != nil {
+		writeDomainError(w, err)
+		return
+	}
+	writeJSON(w, response, http.StatusOK)
+}
+
+func (h *Handler) CreateActivity(w http.ResponseWriter, r *http.Request) {
+	var request CreateActivityRequest
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		apiresp.WriteError(w, http.StatusBadRequest, "BAD_REQUEST", "Invalid JSON body")
+		return
+	}
+	userID, role, ok := authContext(w, r)
+	if !ok {
+		return
+	}
+	classroomID, ok := pathID(w, r, "id")
+	if !ok {
+		return
+	}
+	response, err := h.service.CreateActivity(userID, role, classroomID, request.QuestionSetID, request.Title)
+	if err != nil {
+		writeDomainError(w, err)
+		return
+	}
+	writeJSON(w, response, http.StatusCreated)
+}
+
+func (h *Handler) ListActivities(w http.ResponseWriter, r *http.Request) {
+	userID, role, ok := authContext(w, r)
+	if !ok {
+		return
+	}
+	classroomID, ok := pathID(w, r, "id")
+	if !ok {
+		return
+	}
+	response, err := h.service.ListActivities(userID, role, classroomID)
+	if err != nil {
+		writeDomainError(w, err)
+		return
+	}
+	writeJSON(w, response, http.StatusOK)
+}
+
+func authContext(w http.ResponseWriter, r *http.Request) (uint, string, bool) {
+	userID, ok := appcontext.GetUserID(r.Context())
+	if !ok {
+		apiresp.WriteError(w, http.StatusUnauthorized, "UNAUTHORIZED", "User ID not found in context")
+		return 0, "", false
+	}
+	role, _ := appcontext.GetRole(r.Context())
+	return userID, role, true
+}
+
+func pathID(w http.ResponseWriter, r *http.Request, name string) (uint, bool) {
+	value, err := strconv.ParseUint(mux.Vars(r)[name], 10, 32)
+	if err != nil || value == 0 {
+		apiresp.WriteError(w, http.StatusBadRequest, "BAD_REQUEST", "Invalid ID")
+		return 0, false
+	}
+	return uint(value), true
+}
+
+func writeDomainError(w http.ResponseWriter, err error) {
+	switch {
+	case errors.Is(err, ErrInvalidRequest):
+		apiresp.WriteError(w, http.StatusBadRequest, "BAD_REQUEST", err.Error())
+	case errors.Is(err, ErrInvalidStatus):
+		apiresp.WriteError(w, http.StatusBadRequest, "BAD_REQUEST", err.Error())
+	case errors.Is(err, ErrForbidden):
+		apiresp.WriteError(w, http.StatusForbidden, "FORBIDDEN", err.Error())
+	case errors.Is(err, ErrNotFound), errors.Is(err, ErrInvalidQuestionSet), errors.Is(err, ErrQuestionSetEmpty):
+		apiresp.WriteError(w, http.StatusNotFound, "NOT_FOUND", err.Error())
+	case errors.Is(err, ErrQuestionSetForbidden):
+		apiresp.WriteError(w, http.StatusForbidden, "FORBIDDEN", err.Error())
+	case errors.Is(err, ErrDuplicateParticipant):
+		apiresp.WriteError(w, http.StatusConflict, "CONFLICT", err.Error())
+	case errors.Is(err, ErrInactiveClassroom), errors.Is(err, ErrInactiveActivity), errors.Is(err, ErrNotActiveParticipant):
+		apiresp.WriteError(w, http.StatusForbidden, "FORBIDDEN", err.Error())
+	default:
+		apiresp.WriteError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Request failed")
+	}
+}
+
+func writeJSON(w http.ResponseWriter, payload any, status int) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	if err := json.NewEncoder(w).Encode(payload); err != nil {
+		http.Error(w, "Error encoding response", http.StatusInternalServerError)
+	}
+}
