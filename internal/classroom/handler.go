@@ -16,7 +16,7 @@ type Handler struct{ service Service }
 
 func NewHandler(service Service) *Handler { return &Handler{service: service} }
 
-// CreateClassroom creates a classroom for the authenticated professor or admin.
+// CreateClassroom creates a classroom for the authenticated user.
 // @Summary Create a classroom
 // @Tags Classrooms
 // @Accept json
@@ -25,7 +25,6 @@ func NewHandler(service Service) *Handler { return &Handler{service: service} }
 // @Success 201 {object} ClassroomResponse
 // @Failure 400 {object} apiresp.ErrorResponse "Invalid JSON body or classroom name"
 // @Failure 401 {object} apiresp.ErrorResponse "Unauthenticated"
-// @Failure 403 {object} apiresp.ErrorResponse "Only professors and admins can create classrooms"
 // @Failure 500 {object} apiresp.ErrorResponse "Internal server error"
 // @Security BearerAuth
 // @Router /classrooms [post]
@@ -35,11 +34,11 @@ func (h *Handler) CreateClassroom(w http.ResponseWriter, r *http.Request) {
 		apiresp.WriteError(w, http.StatusBadRequest, "BAD_REQUEST", "Invalid JSON body")
 		return
 	}
-	userID, role, ok := authContext(w, r)
+	userID, _, ok := authContext(w, r)
 	if !ok {
 		return
 	}
-	response, err := h.service.CreateClassroom(userID, role, request.Name)
+	response, err := h.service.CreateClassroom(userID, request.Name)
 	if err != nil {
 		writeDomainError(w, err)
 		return

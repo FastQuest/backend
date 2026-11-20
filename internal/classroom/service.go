@@ -16,10 +16,7 @@ func NewService(repository Repository, db *gorm.DB) Service {
 	return &service{repository: repository, db: db}
 }
 
-func (s *service) CreateClassroom(userID uint, role, name string) (ClassroomResponse, error) {
-	if !canCreate(role) {
-		return ClassroomResponse{}, ErrForbidden
-	}
+func (s *service) CreateClassroom(userID uint, name string) (ClassroomResponse, error) {
 	name = strings.TrimSpace(name)
 	if userID == 0 || name == "" {
 		return ClassroomResponse{}, ErrInvalidRequest
@@ -133,8 +130,6 @@ func (s *service) authorizeManager(actorID uint, role string, classroomID uint) 
 	}
 	return nil
 }
-
-func canCreate(role string) bool { return role == "Professor" || role == "Admin" }
 
 func classroomResponse(item Classroom) ClassroomResponse {
 	return ClassroomResponse{ID: item.ID, Name: item.Name, CreatorID: item.CreatorID, Status: item.Status, CreatedAt: item.CreatedAt}

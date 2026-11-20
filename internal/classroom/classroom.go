@@ -28,7 +28,7 @@ type Repository interface {
 }
 
 type Service interface {
-	CreateClassroom(userID uint, role, name string) (ClassroomResponse, error)
+	CreateClassroom(userID uint, name string) (ClassroomResponse, error)
 	ListClassrooms(userID uint) ([]ClassroomResponse, error)
 	UpdateClassroomStatus(actorID uint, role string, classroomID uint, status string) error
 	AddParticipant(actorID uint, role string, classroomID, userID uint) (ParticipantResponse, error)
